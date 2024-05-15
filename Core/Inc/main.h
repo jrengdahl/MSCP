@@ -54,6 +54,10 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
+extern void trigon();
+extern void trigoff();
+extern void foo();
+
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -171,6 +175,8 @@ void Error_Handler(void);
 #define CARD_DETECT_1_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+
+#define GPIONAME(X) X##_GPIO_Port, X##_Pin
 
 /* USER CODE END Private defines */
 

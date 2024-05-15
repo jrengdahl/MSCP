@@ -55,6 +55,8 @@ SRAM_HandleTypeDef hsram1;
 
 /* USER CODE BEGIN PV */
 
+unsigned CPU_CLOCK_FREQUENCY = 100;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -74,6 +76,16 @@ static void MX_SPI1_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+
+void trigon()
+    {
+    HAL_GPIO_WritePin(GPIONAME(LED), 1);
+    }
+
+void trigoff()
+    {
+    HAL_GPIO_WritePin(GPIONAME(LED), 0);
+    }
 
 /* USER CODE END 0 */
 
@@ -118,6 +130,9 @@ int main(void)
   MX_SPI5_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+
+  extern void background();
+  background();
 
   /* USER CODE END 2 */
 
