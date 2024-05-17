@@ -4,9 +4,9 @@
 *                         www.segger.com                             *
 **********************************************************************
 
-File          : C:/STM32/H503/H503.jdebug
-Created       : 15 Apr 2023 00:52
-Ozone Version : V3.28e
+File          : C:/STM32/MSCP/init.jdebug
+Created       : 16 May 2024 20:49
+Ozone Version : V3.34
 */
 
 /*********************************************************************
@@ -23,22 +23,22 @@ void OnProjectLoad (void) {
   // Dialog-generated settings
   //
   Project.SetTraceSource ("Trace Pins");
-  Project.SetDevice ("STM32H503RB");
+  Project.SetDevice ("STM32H723ZG");
   Project.SetHostIF ("USB", "");
   Project.SetTargetIF ("SWD");
   Project.SetTIFSpeed ("4 MHz");
   Project.AddPathSubstitute("/cygdrive/c/","C:/");
-  Project.AddPathSubstitute ("C:/STM32/H503", "$(ProjectDir)");
-  Project.AddPathSubstitute ("c:/stm32/h503", "$(ProjectDir)");
-  Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M33F.svd");
-  Project.AddSvdFile ("$(InstallDir)/Config/Peripherals/ARMv8M.svd");
+  Project.AddPathSubstitute ("C:/STM32/MSCP", "$(ProjectDir)");
+  Project.AddPathSubstitute ("c:/stm32/mscp", "$(ProjectDir)");
+  Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M7F.svd");
+  Project.AddSvdFile ("$(InstallDir)/Config/Peripherals/ARMv7M.svd");
   //
   // User settings
   //
   Edit.Preference (PREF_TIMESTAMP_FORMAT, TIMESTAMP_FORMAT_INST_CNT);
   Edit.SysVar (VAR_TRACE_MAX_INST_CNT, 10000);
   Edit.SysVar (VAR_TRACE_TIMESTAMPS_ENABLED, 0);
-  File.Open ("C:/STM32/H503/Debug/H503.elf");
+  File.Open ("$(ProjectDir)/Debug/MSCP.elf");
   OS.AddContextSwitchSymbol("Context::start_switch1");
   OS.AddContextSwitchSymbol("Context::start_switch2");
   OS.AddContextSwitchSymbol("Context::suspend_switch");
@@ -165,7 +165,7 @@ void AfterTargetReset (void) {
 **********************************************************************
 */
 void BeforeTargetConnect (void) {
- Project.SetJLinkScript("./ST_STM32H503_TracePins.JLinkScript");
+//  Project.SetJLinkScript("./ST_STM32H723Z_TracePins.JLinkScript");
 }
 
 /*********************************************************************
