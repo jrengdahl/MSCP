@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include "main.h"
-#include "stm32h5xx_hal.h"
+#include "stm32h7xx_hal.h"
 #include "adc.h"
 
 #define TS_CAL1 0x02fa

@@ -32,6 +32,11 @@
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 
+static int vcp_init_complete = 0;
+
+static uint8_t *xmit_Buf2 = 0;
+static uint16_t xmit_Len2 = 0;
+
 /* USER CODE END PV */
 
 /** @addtogroup STM32_USB_OTG_DEVICE_LIBRARY
@@ -111,6 +116,9 @@ extern USBD_HandleTypeDef hUsbDeviceHS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
 
+extern void vcp_tx_callback();
+extern void vcp_rx_callback(uint8_t *Buf, uint32_t Len);
+
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
@@ -157,6 +165,9 @@ static int8_t CDC_Init_HS(void)
   /* Set Application Buffers */
   USBD_CDC_SetTxBuffer(&hUsbDeviceHS, UserTxBufferHS, 0);
   USBD_CDC_SetRxBuffer(&hUsbDeviceHS, UserRxBufferHS);
+
+  vcp_init_complete = 1;
+
   return (USBD_OK);
   /* USER CODE END 8 */
 }
@@ -264,6 +275,8 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 11 */
+  vcp_rx_callback(Buf, *Len);
+
   USBD_CDC_SetRxBuffer(&hUsbDeviceHS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceHS);
   return (USBD_OK);
@@ -281,11 +294,15 @@ uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 12 */
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceHS.pClassData;
-  if (hcdc->TxState != 0){
-    return USBD_BUSY;
-  }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf, Len);
+  if(!vcp_txready())
+      {
+      return USBD_BUSY;
+      }
+
+  xmit_Buf2 = Buf2;
+  xmit_Len2 = Len2;
+
+  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf1, Len1);
   result = USBD_CDC_TransmitPacket(&hUsbDeviceHS);
   /* USER CODE END 12 */
   return result;
@@ -310,11 +327,28 @@ static int8_t CDC_TransmitCplt_HS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
   UNUSED(Buf);
   UNUSED(Len);
   UNUSED(epnum);
+
+  if(xmit_Buf2)
+      {
+      USBD_CDC_SetTxBuffer(&hUsbDeviceHS, xmit_Buf2, xmit_Len2);
+      USBD_CDC_TransmitPacket(&hUsbDeviceHS);
+      xmit_Buf2 = 0;
+      xmit_Len2 = 0;
+      }
+  else
+      {
+      vcp_tx_callback();
+      }
+
   /* USER CODE END 14 */
   return result;
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
+void vcp_init ()
+    {
+    while(!vcp_init_complete);		        // Wait until the CDC library calls CDC_Init_HS
+    }
 
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 

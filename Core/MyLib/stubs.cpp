@@ -50,8 +50,17 @@ void exit( int exit_code UNUSED)
 
 int __errno = 0;
 
+#if 0
 extern "C"
 int fflush(FILE * UNUSED)
     {
     return 0;
     }
+#endif
+
+#if 0
+extern "C"
+void _init()
+    {
+    }
+#endif

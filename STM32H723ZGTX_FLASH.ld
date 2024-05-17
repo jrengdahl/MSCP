@@ -37,8 +37,13 @@ ENTRY(Reset_Handler)
 /* Highest address of the user mode stack */
 _estack = ORIGIN(RAM_D1) + LENGTH(RAM_D1);    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
-_Min_Heap_Size = 0x200;      /* required amount of heap  */
+_Min_Heap_Size = 0x400;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
+
+_memory_start = ORIGIN(FLASH);
+_memory_end = ORIGIN(FLASH) + LENGTH(FLASH);
+_memory2_start = ORIGIN(RAM_D1);
+_memory2_end = ORIGIN(RAM_D1) + LENGTH(RAM_D1);
 
 /* Specify the memory areas */
 MEMORY
@@ -57,6 +62,7 @@ SECTIONS
   /* The startup code goes first into FLASH */
   .isr_vector :
   {
+    _text_start = .;
     . = ALIGN(4);
     KEEP(*(.isr_vector)) /* Startup code */
     . = ALIGN(4);
@@ -139,6 +145,8 @@ SECTIONS
     _edata = .;        /* define a global symbol at data end */
   } >RAM_D1 AT> FLASH
 
+    _text_end = _sidata +_edata - _sdata;
+
   /* Uninitialized data section */
   . = ALIGN(4);
   .bss :
@@ -161,9 +169,13 @@ SECTIONS
     . = ALIGN(8);
     PROVIDE ( end = . );
     PROVIDE ( _end = . );
+    _heap_start = .;
     . = . + _Min_Heap_Size;
+   _heap_end = .;
+   _stack_start = .;
     . = . + _Min_Stack_Size;
     . = ALIGN(8);
+   _stack_end = .;
   } >RAM_D1
 
   /* Remove information from the standard libraries */

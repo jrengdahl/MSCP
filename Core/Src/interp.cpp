@@ -163,7 +163,8 @@ uint32_t interp(uintptr_t arg)
             }
 
 
-//              //                              //
+#if 0
+        //              //                              //
         HELP(  "i <pin> [<repeat>]              report inputs")
         else if(buf[0]=='i' && buf[1] == ' ')
             {
@@ -200,6 +201,7 @@ uint32_t interp(uintptr_t arg)
                 yield();
                 }
             }
+#endif
 
 
 //              //                              //
@@ -221,9 +223,10 @@ uint32_t interp(uintptr_t arg)
 
             switch(o)
                 {
-                case 0:     HAL_GPIO_WritePin(GPIONAME(LED), (GPIO_PinState)(value));  break;
-                case 1:     HAL_GPIO_WritePin(GPIONAME(PA8), (GPIO_PinState)(value));  break;
-                default:    HAL_GPIO_WritePin(GPIONAME(LED), (GPIO_PinState)(value));  break;
+                case 0:     HAL_GPIO_WritePin(GPIONAME(LED0), (GPIO_PinState)(value));  break;
+                case 1:     HAL_GPIO_WritePin(GPIONAME(LED1), (GPIO_PinState)(value));  break;
+                case 2:     HAL_GPIO_WritePin(GPIONAME(LED2), (GPIO_PinState)(value));  break;
+                default:    HAL_GPIO_WritePin(GPIONAME(LED0), (GPIO_PinState)(value));  break;
                 }
             }
 
@@ -254,9 +257,10 @@ uint32_t interp(uintptr_t arg)
                 {
                 switch(dest)
                     {
-                    case  0: HAL_GPIO_WritePin(GPIONAME( LED), (GPIO_PinState)(i&1)); break;
-                    case  1: HAL_GPIO_WritePin(GPIONAME( PA8), (GPIO_PinState)(i&1)); break;
-                    default: HAL_GPIO_WritePin(GPIONAME( LED), (GPIO_PinState)(i&1)); break;
+                    case  0: HAL_GPIO_WritePin(GPIONAME( LED0), (GPIO_PinState)(i&1)); break;
+                    case  1: HAL_GPIO_WritePin(GPIONAME( LED1), (GPIO_PinState)(i&1)); break;
+                    case  2: HAL_GPIO_WritePin(GPIONAME( LED2), (GPIO_PinState)(i&1)); break;
+                    default: HAL_GPIO_WritePin(GPIONAME( LED0), (GPIO_PinState)(i&1)); break;
                     }
 
                 bogodelay(delay);
@@ -264,7 +268,8 @@ uint32_t interp(uintptr_t arg)
             }
 
 
-//              //                              //
+#if 0
+        //              //                              //
         HELP(  "clk <freq in MHz>               set CPU clock")
         else if(buf[0]=='c' && buf[1]=='l' && buf[2]=='k')
             {
@@ -285,6 +290,7 @@ uint32_t interp(uintptr_t arg)
                 printf("trace may not be stable at frequencies over 100 MHz\n");
                 }
             }
+#endif
 
 
 //              //                              //
@@ -491,6 +497,7 @@ uint32_t interp(uintptr_t arg)
              }
 
 
+#if 0
 //              //                              //
         HELP(  "tmp                             read the temperature sensor")
         else if(buf[0]=='t' && buf[1]=='m' && buf[2]=='p')
@@ -526,6 +533,7 @@ uint32_t interp(uintptr_t arg)
                 yield();
                 }
             }
+#endif
 
 //              //                              //
         HELP(  "omp <num>                       run an OMP test")

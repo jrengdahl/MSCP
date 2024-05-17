@@ -109,6 +109,14 @@ uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
+void vcp_init ();
+
+static inline int vcp_txready()
+    {
+    USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceHS.pClassData;
+    return hcdc->TxState == 0;
+    }
+
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
