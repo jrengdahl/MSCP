@@ -24,8 +24,7 @@ void __cxa_pure_virtual()
 
 extern "C"
 void __cxa_atexit(void)
-    {
-    }
+    {   }
 
 void operator delete(void * p UNUSED)
     {
@@ -50,17 +49,4 @@ void exit( int exit_code UNUSED)
 
 int __errno = 0;
 
-#if 0
-extern "C"
-int fflush(FILE * UNUSED)
-    {
-    return 0;
-    }
-#endif
 
-#if 0
-extern "C"
-void _init()
-    {
-    }
-#endif

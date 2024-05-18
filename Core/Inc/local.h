@@ -20,6 +20,7 @@ extern void skip(const char **p);
 extern "C" void trigon();
 extern "C" void trigoff();
 
+#define fflush(x)
 
 #endif
 

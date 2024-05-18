@@ -2,3 +2,4 @@
 *.bak
 /MSCP-edu.jdebug.user
 /Debug/
+/test.cpp

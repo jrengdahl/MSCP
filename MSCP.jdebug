@@ -22,7 +22,7 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.SetTraceSource ("Trace Pins");
+  Project.SetTraceSource ("Trace Buffer");
   Project.SetDevice ("STM32H723ZG");
   Project.SetHostIF ("USB", "");
   Project.SetTargetIF ("SWD");
@@ -30,14 +30,14 @@ void OnProjectLoad (void) {
   Project.AddPathSubstitute("/cygdrive/c/","C:/");
   Project.AddPathSubstitute ("C:/STM32/MSCP", "$(ProjectDir)");
   Project.AddPathSubstitute ("c:/stm32/mscp", "$(ProjectDir)");
+  Project.AddPathSubstitute("C:/cross/arch/arm-cortexm7/.build/arm-cortexm7-eabi/src/newlib", "C:\cross\arch\arm-cortexm7\.build\src\newlib-4.4.0.20231231");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M7F.svd");
   Project.AddSvdFile ("$(InstallDir)/Config/Peripherals/ARMv7M.svd");
   //
   // User settings
   //
   Edit.Preference (PREF_TIMESTAMP_FORMAT, TIMESTAMP_FORMAT_INST_CNT);
-  Edit.SysVar (VAR_TRACE_MAX_INST_CNT, 10000);
-  Edit.SysVar (VAR_TRACE_TIMESTAMPS_ENABLED, 0);
+  Edit.SysVar (VAR_TRACE_CORE_CLOCK, 64000000);
   File.Open ("$(ProjectDir)/Debug/MSCP.elf");
   OS.AddContextSwitchSymbol("Context::start_switch1");
   OS.AddContextSwitchSymbol("Context::start_switch2");
