@@ -54,10 +54,6 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
 
-extern void trigon();
-extern void trigoff();
-extern void foo();
-
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
@@ -71,6 +67,9 @@ extern void foo();
 /* USER CODE BEGIN Private defines */
 
 #define GPIONAME(X) X##_GPIO_Port, X##_Pin
+#define trigon(x)  HAL_GPIO_WritePin(LED##x##_GPIO_Port, LED##x##_Pin, GPIO_PIN_SET)
+#define trigoff(x) HAL_GPIO_WritePin(LED##x##_GPIO_Port, LED##x##_Pin, GPIO_PIN_RESET);
+
 
 /* USER CODE END Private defines */
 
