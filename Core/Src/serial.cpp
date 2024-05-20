@@ -57,7 +57,7 @@ static void vcp_writeblock(uint8_t* Buf1, uint16_t Len1, uint8_t* Buf2 = 0, uint
                 }
             }
         }
-    while(CDC_Transmit_HS(Buf1, Len1, Buf2, Len2) == USBD_BUSY);
+    while(CDC_Transmit_HS2(Buf1, Len1, Buf2, Len2) == USBD_BUSY);
     }
 
 extern "C"

@@ -20,9 +20,10 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
-#include "cmsis.h"
 
 /* USER CODE BEGIN INCLUDE */
+
+#include "cmsis.h"
 
 /* USER CODE END INCLUDE */
 
@@ -292,10 +293,26 @@ static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t *Len)
   * @param  Len: Number of data to be sent (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
   */
-uint8_t CDC_Transmit_HS(uint8_t* Buf1, uint16_t Len1, uint8_t* Buf2, uint16_t Len2)
+uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 12 */
+  if(!vcp_txready())
+      {
+      return USBD_BUSY;
+      }
+
+  xmit_Buf2 = 0;
+  xmit_Len2 = 0;
+
+  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf, Len);
+  result = USBD_CDC_TransmitPacket(&hUsbDeviceHS);
+  return result;
+}
+
+uint8_t CDC_Transmit_HS2(uint8_t* Buf1, uint16_t Len1, uint8_t* Buf2, uint16_t Len2)
+{
+  uint8_t result = USBD_OK;
   if(!vcp_txready())
       {
       return USBD_BUSY;

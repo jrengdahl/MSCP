@@ -48,7 +48,7 @@
 
 /* USER CODE BEGIN PV */
 
-unsigned CPU_CLOCK_FREQUENCY = 550;
+unsigned CPU_CLOCK_FREQUENCY = 100;
 
 /* USER CODE END PV */
 

@@ -279,7 +279,7 @@ uint32_t interp(uintptr_t arg)
                 SystemClock_PLL_Config(clk);        // set the PLL to the new frequency
 
                 // set the TIM2 prescaler to the new frequency so that it always ticks at 1 MHz
-                htim2.Instance->PSC = clk - 1;      // set the prescale value
+                htim2.Instance->PSC = (clk/2) - 1;  // set the prescale value
                 htim2.Instance->EGR = TIM_EGR_UG;   // generate an update event to update the prescaler immediately
                 }
 

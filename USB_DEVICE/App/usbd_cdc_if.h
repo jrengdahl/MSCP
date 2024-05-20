@@ -48,9 +48,14 @@
   * @{
   */
 /* Define size for the receive and transmit buffer over CDC */
+#define APP_RX_DATA_SIZE  2048
+#define APP_TX_DATA_SIZE  2048
+/* USER CODE BEGIN EXPORTED_DEFINES */
+
+#undef APP_RX_DATA_SIZE
+#undef APP_TX_DATA_SIZE
 #define APP_RX_DATA_SIZE  64
 #define APP_TX_DATA_SIZE  0
-/* USER CODE BEGIN EXPORTED_DEFINES */
 
 /* USER CODE END EXPORTED_DEFINES */
 
@@ -107,9 +112,11 @@ extern USBD_HandleTypeDef hUsbDeviceHS;
   * @{
   */
 
-uint8_t CDC_Transmit_HS(uint8_t* Buf1, uint16_t Len1, uint8_t* Buf2, uint16_t Len2);
+uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
+
+uint8_t CDC_Transmit_HS2(uint8_t* Buf1, uint16_t Len1, uint8_t* Buf2, uint16_t Len2);
 
 void vcp_init ();
 
