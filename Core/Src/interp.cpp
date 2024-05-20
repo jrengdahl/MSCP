@@ -268,7 +268,6 @@ uint32_t interp(uintptr_t arg)
             }
 
 
-#if 0
         //              //                              //
         HELP(  "clk <freq in MHz>               set CPU clock")
         else if(buf[0]=='c' && buf[1]=='l' && buf[2]=='k')
@@ -290,7 +289,6 @@ uint32_t interp(uintptr_t arg)
                 printf("trace may not be stable at frequencies over 100 MHz\n");
                 }
             }
-#endif
 
 
 //              //                              //
