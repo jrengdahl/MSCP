@@ -20,6 +20,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_cdc_if.h"
+#include "cmsis.h"
 
 /* USER CODE BEGIN INCLUDE */
 
@@ -348,7 +349,10 @@ static int8_t CDC_TransmitCplt_HS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
 void vcp_init ()
     {
-    while(!vcp_init_complete);		        // Wait until the CDC library calls CDC_Init_HS
+    while(!vcp_init_complete)		        // Wait until the CDC library calls CDC_Init_HS
+        {
+        COMPILER_BARRIER();
+        }
     }
 
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */

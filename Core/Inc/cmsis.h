@@ -10,11 +10,15 @@ extern "C" {
 
 #include "cmsis_compiler.h"
 
+#ifdef __cplusplus
 inline bool COMPILER_BARRIER()
     {
     __COMPILER_BARRIER();
     return true;
     }
+#else
+#define COMPILER_BARRIER __COMPILER_BARRIER
+#endif
 
 #define __FORCEINLINE __attribute__((always_inline)) inline
 #define __UNUSED  __attribute__((__unused__))
@@ -46,7 +50,7 @@ inline bool COMPILER_BARRIER()
 }
 #endif
 
-
+#ifdef __cplusplus
 
 // Versions of the __LDREX and __STREX intrinsics that
 // work with reference variables and arbitrary types.
@@ -96,6 +100,8 @@ __STATIC_INLINE int __STREX(T value, T volatile &place)
             : "memory");
     return sts;
     }
+
+#endif
 
 
 #endif // CMSIS_H
