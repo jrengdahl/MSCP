@@ -11,7 +11,7 @@ __OPTIMIZE("O2")
 void bogodelay(uint32_t x)
     {
     __asm__ __volatile__(
-   "0:   subs   %[x], 3         \n\t"
+   "0:   subs   %[x], 1         \n\t"
         "bcs    0b              \n"
             :
     : [x]"r"(x)
@@ -50,7 +50,7 @@ void bogodelay(uint64_t x)
     do
         {
         __asm__ __volatile__(
-        "0:   subs   %[x], 3         \n\t"
+        "0:   subs   %[x], 1         \n\t"
              "bcs    0b              \n"
         : [x]"+r"(tmp.lo)
         :
