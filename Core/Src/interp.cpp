@@ -495,7 +495,6 @@ uint32_t interp(uintptr_t arg)
              }
 
 
-#if 0
 //              //                              //
         HELP(  "tmp                             read the temperature sensor")
         else if(buf[0]=='t' && buf[1]=='m' && buf[2]=='p')
@@ -503,7 +502,7 @@ uint32_t interp(uintptr_t arg)
             extern int read_temperature();
             int last_avg = -1;
             int repeat = 50;
-            int avg = 30;
+            int avg = -999;
             int count = 0;
             int last_count = 0;
 
@@ -516,7 +515,8 @@ uint32_t interp(uintptr_t arg)
                 {
                 int tmp = read_temperature();
 
-                avg = (avg*9 + tmp)/10;
+                if(avg == -999) avg = tmp;
+                else            avg = (avg*9 + tmp)/10;
 
                 if(avg-last_avg > 1 || last_avg-avg > 1)
                     {
@@ -531,7 +531,6 @@ uint32_t interp(uintptr_t arg)
                 yield();
                 }
             }
-#endif
 
 //              //                              //
         HELP(  "omp <num>                       run an OMP test")
