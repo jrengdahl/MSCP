@@ -111,6 +111,7 @@ int get1()
 static int first=1;
 static char lastline[NHISTORY][INBUFLEN];
 static int lln=0;
+int getline_nchar = 0;
 
 
 // fill a command line buffer from stdin, handling command line editing and history
@@ -278,6 +279,7 @@ void getline(   char *buf,                                                      
             if(x<n)back(n-x);
             }
         fflush(stdout);
+        getline_nchar = n;
         }
     if(x<n)forward(n-x);
     putchar('\n');
@@ -285,5 +287,6 @@ void getline(   char *buf,                                                      
     for(i=0;i<n;i++)lastline[lln][i] = buf[i];
     lastline[lln][n]=0;
     lln = (lln+1)&HMASK;
+    getline_nchar = 0;
     }   
 

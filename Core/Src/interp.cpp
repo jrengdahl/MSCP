@@ -31,6 +31,7 @@ extern "C" void SystemClock_PLL_Config(unsigned);
 extern "C" void SystemClock_HSI_Config(void);
 extern char InterpStack[2048];
 extern omp_thread omp_threads[GOMP_MAX_NUM_THREADS];
+bool waiting_for_command = false;
 
 
 // print a large number with commas
@@ -56,9 +57,8 @@ void commas(uint32_t x)
 
 char buf[INBUFLEN];
 
-uint32_t interp(uintptr_t arg)
+void interp()
     {
-    (void)arg;
 
     bear();
     printf("hello, world!\n");
@@ -69,11 +69,14 @@ uint32_t interp(uintptr_t arg)
         {
         const char *p;
 
+        yield();
         libgomp_reinit();                                                       // reset things in OPenMP such as the default number of threads
         ControlC = false;
         putchar('>');                                                           // output the command line prompt
         fflush(stdout);
+        waiting_for_command = true;
         getline(buf, INBUFLEN);                                                 // get a command line
+        waiting_for_command = false;
         p = buf;
         skip(&p);                                                               // skip command and following whitespace
 
@@ -499,12 +502,21 @@ uint32_t interp(uintptr_t arg)
         HELP(  "tmp                             read the temperature sensor")
         else if(buf[0]=='t' && buf[1]=='m' && buf[2]=='p')
             {
+            extern int read_temperature_raw();
             extern int read_temperature();
             int last_avg = -1;
             int repeat = 50;
-            int avg = -999;
-            int count = 0;
-            int last_count = 0;
+            int avg = 0;
+            double last_change = omp_get_wtime();
+            double now;
+            bool first_time = true;
+            const int NAVG = 50;
+
+            if(*p == 'r')
+                {
+                printf("raw temperature = %d\n", read_temperature_raw());
+                continue;
+                }
 
             if(isdigit(*p))                                                 // while there is any data left on the command line
                 {
@@ -515,18 +527,19 @@ uint32_t interp(uintptr_t arg)
                 {
                 int tmp = read_temperature();
 
-                if(avg == -999) avg = tmp;
-                else            avg = (avg*9 + tmp)/10;
+                if(first_time) avg = tmp;
+                else           avg = (avg*(NAVG-1) + tmp)/NAVG;
 
-                if(avg-last_avg > 1 || last_avg-avg > 1)
+                if(avg != last_avg)
                     {
-                    printf("temperature: %3d C, %3d F, avg = %3d C, delta = %d\n", tmp, (tmp*18 + 325)/10, avg, count - last_count);
+                    now = omp_get_wtime();
+                    printf("temperature: %3d C, %3d F, avg = %3d C, elapsed = %5.3f\n", tmp, (tmp*18 + 325)/10, avg, now-last_change);
                     last_avg = avg;
-                    last_count = count;
+                    last_change = now;
                     -- repeat;
                     }
 
-                ++count;
+                first_time = false;
 
                 yield();
                 }
@@ -575,14 +588,27 @@ uint32_t interp(uintptr_t arg)
             }
 
 //              //                              //
-        HELP(  "v <num>                         set verbosity level")
+        HELP(  "v <type> <num>                  set verbosity level")
         else if(buf[0]=='v' && buf[1]==' ')
             {
             extern int omp_verbose;
+            extern int temp_verbose;
 
-            if(isdigit(*p))
+            if(*p == 'o')
                 {
-                omp_verbose = getdec(&p);                              // get the count
+                skip(&p);
+                if(isdigit(*p))
+                    {
+                    omp_verbose = getdec(&p);
+                    }
+                }
+            else if(*p == 't')
+                {
+                skip(&p);
+                if(isdigit(*p))
+                    {
+                    temp_verbose = getdec(&p);
+                    }
                 }
             }
 
@@ -613,11 +639,8 @@ uint32_t interp(uintptr_t arg)
 
         // else I dunno what you want
         else printf("illegal command\n");
-
-        yield();
         }
 
-    return 0;
     }
 
 

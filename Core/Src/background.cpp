@@ -19,6 +19,8 @@
 #include "cyccnt.hpp"
 #include "libgomp.hpp"
 #include "boundaries.h"
+#include "tim.h"
+
 
 // The DeferFIFO used by yield, for rudimentary time-slicing.
 // Note that the only form of "time-slicing" occurs when a thread
@@ -31,8 +33,11 @@ ContextFIFO DeferFIFO;
 
 extern Port txPort;                              // ports for use by the console (serial or USB VCP)
 extern Port rxPort;
+extern Port tempPort;
+extern bool waiting_for_command;
 
-extern uint32_t interp(uintptr_t);               // the command line interpreter thread
+extern void interp();                           // the command line interpreter thread
+extern void temperature_monitor();
 
 uint32_t LastTimeStamp = 0;
 
@@ -53,6 +58,8 @@ void foo()
 extern "C"
 void background()                                       // powerup init and background loop
     {
+    uint32_t last_temp_sample = __HAL_TIM_GET_COUNTER(&htim2);
+
     ///////////////////////////
     // powerup initialization
     ///////////////////////////
@@ -74,7 +81,7 @@ void background()                                       // powerup init and back
 
     libgomp_init();                                     // init the OpenMP threading system, including setting background as thread 0
 
-    #pragma omp parallel num_threads(2)
+    #pragma omp parallel num_threads(3)
     if(omp_get_thread_num() == 0)                       // thread 0 runs this:
         {
         while(1)                                        // run the background polling loop
@@ -85,11 +92,24 @@ void background()                                       // powerup init and back
                 {
                 undefer();                              // wake any threads that called yield
                 }
+
+            uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
+            if(waiting_for_command && (now - last_temp_sample > 100000))
+                {
+                tempPort.resume((void *)now);
+                last_temp_sample = now;
+                }
             }
         }
+
     else if(omp_get_thread_num() == 1)                  // and thread 1 runs this:
         {
-        interp(0);                                      // run the command line interpreter
+        interp();                                       // run the command line interpreter
+        }
+
+    else if(omp_get_thread_num() == 2)                  // and thread 2 runs this:
+        {
+        temperature_monitor();                          // run the command line interpreter
         }
 
     // neither of the above two threads terminate, so the parallel never ends, and we should never get here

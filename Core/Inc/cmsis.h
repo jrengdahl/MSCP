@@ -13,7 +13,7 @@ extern "C" {
 #ifdef __cplusplus
 inline bool COMPILER_BARRIER()
     {
-    __COMPILER_BARRIER();
+    __asm__ __volatile__("":::"memory");
     return true;
     }
 #else
