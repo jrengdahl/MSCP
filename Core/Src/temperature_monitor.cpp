@@ -11,7 +11,7 @@
 
 extern int getline_nchar;
 
-int temp_verbose = 1;
+int temp_verbose = 10;      // minimum time (in seconds) between temperature reports, 0 disables reporting
 
 Port tempPort;
 
@@ -62,9 +62,9 @@ void temperature_monitor()
         temp = read_temperature();
         avg_temp = (avg_temp*(NAVG-1) + temp)/NAVG;
 
-        if(now - last_temp_report > 10000000
-        && getline_nchar == 0
-        && temp_verbose > 0)
+        if(temp_verbose > 0
+        && now - last_temp_report > (uint32_t)temp_verbose*1000000
+        && getline_nchar == 0)
             {
             if(avg_temp-last_avg_temp > 1000 || last_avg_temp-avg_temp > 1000)
                 {

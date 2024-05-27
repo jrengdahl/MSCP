@@ -22,7 +22,7 @@ metal mcrocontrollers.
 
 The board contains:
 
--- a STM32H723ZG microcontroller
+-- an STM32H723ZG microcontroller
    -- ARM Cortex-M7 CPU
    -- clock speed up to 550 MHz
    -- 1 megabyte of on-chip flash
@@ -33,7 +33,7 @@ The board contains:
       connected to the FPGA
 
 -- a Efinix Trion T8Q144 FPGA. The FPGA will handle the logic of
-   interfacing QBus to the mucrocontoller.
+   interfacing QBus to the microcontroller.
 
 -- a 16 megabyte SPI NOR flash memory, mainly to hold the
    FPGA bitstream.
@@ -53,11 +53,15 @@ The board contains:
 The board is a half-wide QBus board, the same size as a KDJ11-A
 or RQDX3.
 
-The board was designed with KiCAD, and manufactured by JLCPCB. The
-target cost of the board in lots of 25 will be around $50.
+The board was designed with KiCAD, and manufactured by JLCPCB. The cost
+for the first two prototype boards fabricated, populated, and soldered
+was around $200. This is my first PCB project of this size and
+complexity. (Previous boards were Arduino Nano sized.) I expect I will
+have to turn the board a couple times before I get everything right. The
+target cost of the final board in lots of 25 will be around $50. 
 
 I don't have any firm design for the MSCP firmware at present. I found
-online documents describing the MSCP protocol and the source code for
-the RQDX3. At worst case the hardware could emulate a RL02 drive while
-the MSCP firmware is being developed.
+online documents describing the MSCP protocol, and the source code for
+the RQDX3. At minimum I could emulate a RL02 drive while the MSCP
+firmware is being developed.
 
