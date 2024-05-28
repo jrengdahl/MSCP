@@ -21,6 +21,7 @@
 #include "libgomp.hpp"
 #include "omp.h"
 #include "tim.h"
+#include "spi.h"
 
 
 extern void bear();
@@ -631,6 +632,32 @@ void interp()
             extern void mem();
             mem();
             }
+
+//              //                              //
+        HELP(  "spi <command> {<value>}         SPI2 tests")
+        else if(buf[0]=='s' && buf[1]=='p' && buf[2]=='i')
+            {
+            if(*p=='x')
+                {
+                skip(&p);
+                uint32_t txdata = gethex(&p);
+                uint8_t rxdata;
+
+                // HAL_SPI_Transmit(&hspi2, (const uint8_t *)&value, 1, HAL_MAX_DELAY); // Transmit data
+                HAL_SPI_TransmitReceive(&hspi2, (const uint8_t *)&txdata, &rxdata, 1, HAL_MAX_DELAY); // Transmit and receive data
+                printf("rx = %02x\n", rxdata);
+                }
+            else if(*p=='c')
+                {
+                for(int i=0; i<256; i++)
+                    {
+                    HAL_SPI_Transmit(&hspi2, (const uint8_t *)&i, 1, HAL_MAX_DELAY); // Transmit data
+                    HAL_Delay(100);
+                    }
+                }
+            }
+
+
 
         // print the help screen
         else if(buf[0]=='?')
