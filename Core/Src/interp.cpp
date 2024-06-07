@@ -35,7 +35,7 @@ extern char InterpStack[2048];
 extern omp_thread omp_threads[GOMP_MAX_NUM_THREADS];
 bool waiting_for_command = false;
 
-uint8_t qbuf[256];
+uint32_t qbuf[256/4];
 
 HAL_StatusTypeDef QSPI_WritePage(OSPI_HandleTypeDef *hospi, uint32_t address, uint8_t *data, uint32_t size)
 {
@@ -49,17 +49,17 @@ HAL_StatusTypeDef QSPI_WritePage(OSPI_HandleTypeDef *hospi, uint32_t address, ui
     sCommand.FlashId = HAL_OSPI_FLASH_ID_1;
     sCommand.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
     sCommand.Instruction = 0x06; // Write Enable command
-    sCommand.InstructionSize = HAL_OSPI_INSTRUCTION_8_BITS; // Ensure correct instruction size
-    sCommand.InstructionDtrMode = HAL_OSPI_INSTRUCTION_DTR_DISABLE; // Disable DTR mode for instruction
+    sCommand.InstructionSize = HAL_OSPI_INSTRUCTION_8_BITS;
+    sCommand.InstructionDtrMode = HAL_OSPI_INSTRUCTION_DTR_DISABLE;
     sCommand.AddressMode = HAL_OSPI_ADDRESS_NONE;
     sCommand.AddressSize = HAL_OSPI_ADDRESS_8_BITS; // Set to valid default value
-    sCommand.AddressDtrMode = HAL_OSPI_ADDRESS_DTR_DISABLE; // Disable DTR mode for address
+    sCommand.AddressDtrMode = HAL_OSPI_ADDRESS_DTR_DISABLE;
     sCommand.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
     sCommand.AlternateBytesSize = HAL_OSPI_ALTERNATE_BYTES_8_BITS; // Set to valid default value
-    sCommand.AlternateBytesDtrMode = HAL_OSPI_ALTERNATE_BYTES_DTR_DISABLE; // Disable DTR mode for alternate bytes
+    sCommand.AlternateBytesDtrMode = HAL_OSPI_ALTERNATE_BYTES_DTR_DISABLE;
     sCommand.DataMode = HAL_OSPI_DATA_NONE;
     sCommand.NbData = 0; // No data for write enable command
-    sCommand.DataDtrMode = HAL_OSPI_DATA_DTR_DISABLE; // Disable DTR mode for data
+    sCommand.DataDtrMode = HAL_OSPI_DATA_DTR_DISABLE;
     sCommand.DummyCycles = 0;
     sCommand.DQSMode = HAL_OSPI_DQS_DISABLE;
     sCommand.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
@@ -71,10 +71,10 @@ HAL_StatusTypeDef QSPI_WritePage(OSPI_HandleTypeDef *hospi, uint32_t address, ui
 
     // Configure the command for the page program operation
     sCommand.Instruction = 0x32; // Quad Page Program command
-    sCommand.AddressMode = HAL_OSPI_ADDRESS_1_LINE;
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_1_LINE; // Address in single line mode
     sCommand.AddressSize = HAL_OSPI_ADDRESS_24_BITS;
     sCommand.Address = address;
-    sCommand.DataMode = HAL_OSPI_DATA_4_LINES;
+    sCommand.DataMode = HAL_OSPI_DATA_4_LINES; // Data in quad line mode
     sCommand.NbData = size;
 
     if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
@@ -122,20 +122,21 @@ HAL_StatusTypeDef QSPI_ReadPage(OSPI_HandleTypeDef *hospi, uint32_t address, uin
     sCommand.OperationType = HAL_OSPI_OPTYPE_COMMON_CFG;
     sCommand.FlashId = HAL_OSPI_FLASH_ID_1;
     sCommand.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
-    sCommand.Instruction = 0x6B; // Fast Read command
+    sCommand.Instruction = 0xEB; // Fast Read Quad I/O command
     sCommand.InstructionSize = HAL_OSPI_INSTRUCTION_8_BITS; // Ensure correct instruction size
     sCommand.InstructionDtrMode = HAL_OSPI_INSTRUCTION_DTR_DISABLE; // Disable DTR mode for instruction
-    sCommand.AddressMode = HAL_OSPI_ADDRESS_1_LINE;
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_4_LINES;
     sCommand.AddressSize = HAL_OSPI_ADDRESS_24_BITS;
     sCommand.AddressDtrMode = HAL_OSPI_ADDRESS_DTR_DISABLE; // Disable DTR mode for address
     sCommand.Address = address;
-    sCommand.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
-    sCommand.AlternateBytesSize = HAL_OSPI_ALTERNATE_BYTES_8_BITS; // Set to valid default value
+    sCommand.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_4_LINES;
+    sCommand.AlternateBytesSize = HAL_OSPI_ALTERNATE_BYTES_8_BITS; // Alternate byte is required
     sCommand.AlternateBytesDtrMode = HAL_OSPI_ALTERNATE_BYTES_DTR_DISABLE; // Disable DTR mode for alternate bytes
+    sCommand.AlternateBytes = 0x00; // Dummy alternate byte
     sCommand.DataMode = HAL_OSPI_DATA_4_LINES;
     sCommand.NbData = size;
     sCommand.DataDtrMode = HAL_OSPI_DATA_DTR_DISABLE; // Disable DTR mode for data
-    sCommand.DummyCycles = 8; // Set appropriate dummy cycles
+    sCommand.DummyCycles = 4; // Set appropriate dummy cycles
     sCommand.DQSMode = HAL_OSPI_DQS_DISABLE;
     sCommand.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
 
@@ -910,7 +911,7 @@ void interp()
                 skip(&p);
                 uint32_t addr = gethex(&p);
 
-                QSPI_ReadPage(&hospi1, addr, qbuf, 256);
+                QSPI_ReadPage(&hospi1, addr, (uint8_t *)&qbuf, 256);
                 dump(qbuf, 256);
                 }
             else if(*p == 's')
@@ -928,7 +929,7 @@ void interp()
 
                 for(int i=0; i<256/4; i++)qbuf[i] = data;
 
-                QSPI_WritePage(&hospi1, addr, qbuf, 256);
+                QSPI_WritePage(&hospi1, addr, (uint8_t *)&qbuf, 256);
                 }
             if(*p == 'e')
                 {
