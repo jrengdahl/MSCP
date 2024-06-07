@@ -22,6 +22,7 @@
 #include "omp.h"
 #include "tim.h"
 #include "spi.h"
+#include "octospi.h"
 
 
 extern void bear();
@@ -33,6 +34,220 @@ extern "C" void SystemClock_HSI_Config(void);
 extern char InterpStack[2048];
 extern omp_thread omp_threads[GOMP_MAX_NUM_THREADS];
 bool waiting_for_command = false;
+
+uint8_t qbuf[256];
+
+HAL_StatusTypeDef QSPI_WritePage(OSPI_HandleTypeDef *hospi, uint32_t address, uint8_t *data, uint32_t size)
+{
+    OSPI_RegularCmdTypeDef sCommand;
+
+    if (size > 256)
+        return HAL_ERROR; // Page size is 256 bytes
+
+    // Enable write operations
+    sCommand.OperationType = HAL_OSPI_OPTYPE_COMMON_CFG;
+    sCommand.FlashId = HAL_OSPI_FLASH_ID_1;
+    sCommand.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
+    sCommand.Instruction = 0x06; // Write Enable command
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_NONE;
+    sCommand.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
+    sCommand.DataMode = HAL_OSPI_DATA_NONE;
+    sCommand.DummyCycles = 0;
+    sCommand.DQSMode = HAL_OSPI_DQS_DISABLE;
+    sCommand.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
+
+    if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    // Configure the command for the page program operation
+    sCommand.Instruction = 0x32; // Quad Page Program command
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_1_LINE;
+    sCommand.AddressSize = HAL_OSPI_ADDRESS_24_BITS;
+    sCommand.Address = address;
+    sCommand.DataMode = HAL_OSPI_DATA_4_LINES;
+    sCommand.NbData = size;
+
+    if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    // Transmission of the data
+    if (HAL_OSPI_Transmit(hospi, data, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    // Wait for the end of the program
+    uint8_t reg;
+    do
+    {
+        sCommand.Instruction = 0x05; // Read Status Register command
+        sCommand.AddressMode = HAL_OSPI_ADDRESS_NONE;
+        sCommand.DataMode = HAL_OSPI_DATA_1_LINE;
+        sCommand.NbData = 1;
+        if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+        {
+            return HAL_ERROR;
+        }
+        if (HAL_OSPI_Receive(hospi, &reg, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+        {
+            return HAL_ERROR;
+        }
+    } while (reg & 0x01); // Check the WIP (Write In Progress) bit
+
+    return HAL_OK;
+}
+
+
+
+HAL_StatusTypeDef QSPI_ReadPage(OSPI_HandleTypeDef *hospi, uint32_t address, uint8_t *data, uint32_t size)
+{
+    OSPI_RegularCmdTypeDef sCommand;
+
+    if (size > 256)
+        return HAL_ERROR; // Page size is 256 bytes
+
+    // Configure the command for the read operation
+    sCommand.OperationType = HAL_OSPI_OPTYPE_COMMON_CFG;
+    sCommand.FlashId = HAL_OSPI_FLASH_ID_1;
+    sCommand.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
+    sCommand.Instruction = 0x6B; // Fast Read command
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_1_LINE;
+    sCommand.AddressSize = HAL_OSPI_ADDRESS_24_BITS;
+    sCommand.Address = address;
+    sCommand.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
+    sCommand.DataMode = HAL_OSPI_DATA_4_LINES;
+    sCommand.DummyCycles = 8; // Set appropriate dummy cycles
+    sCommand.NbData = size;
+    sCommand.DQSMode = HAL_OSPI_DQS_DISABLE;
+    sCommand.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
+
+    if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    // Reception of the data
+    if (HAL_OSPI_Receive(hospi, data, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    return HAL_OK;
+}
+
+
+
+HAL_StatusTypeDef QSPI_EraseSector(OSPI_HandleTypeDef *hospi, uint32_t address)
+{
+    OSPI_RegularCmdTypeDef sCommand;
+
+    // Enable write operations
+    sCommand.OperationType = HAL_OSPI_OPTYPE_COMMON_CFG;
+    sCommand.FlashId = HAL_OSPI_FLASH_ID_1;
+    sCommand.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
+    sCommand.Instruction = 0x06; // Write Enable command
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_NONE;
+    sCommand.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
+    sCommand.DataMode = HAL_OSPI_DATA_NONE;
+    sCommand.DummyCycles = 0;
+    sCommand.DQSMode = HAL_OSPI_DQS_DISABLE;
+    sCommand.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
+
+    if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    // Configure the command for the sector erase operation
+    sCommand.Instruction = 0x20; // Sector Erase command
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_1_LINE;
+    sCommand.AddressSize = HAL_OSPI_ADDRESS_24_BITS;
+    sCommand.Address = address;
+
+    if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    {
+        return HAL_ERROR;
+    }
+
+    // Wait for the end of the erase
+    uint8_t reg;
+    do
+    {
+        sCommand.Instruction = 0x05; // Read Status Register command
+        sCommand.AddressMode = HAL_OSPI_ADDRESS_NONE;
+        sCommand.DataMode = HAL_OSPI_DATA_1_LINE;
+        sCommand.NbData = 1;
+        if (HAL_OSPI_Command(hospi, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+        {
+            return HAL_ERROR;
+        }
+        if (HAL_OSPI_Receive(hospi, &reg, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+        {
+            return HAL_ERROR;
+        }
+    } while (reg & 0x01); // Check the WIP (Write In Progress) bit
+
+    return HAL_OK;
+}
+
+
+#define READ_STATUS_REG_1_CMD 0x05
+#define READ_STATUS_REG_2_CMD 0x35
+#define READ_STATUS_REG_3_CMD 0x15
+
+void read_status_registers(void) {
+    OSPI_RegularCmdTypeDef sCommand;
+    uint8_t reg[2] = {0};
+    uint8_t reg_cmd = 0x05;  // Command to read status register-1
+
+    // Initialize the command
+    sCommand.OperationType = HAL_OSPI_OPTYPE_COMMON_CFG;
+    sCommand.FlashId = HAL_OSPI_FLASH_ID_1;
+    sCommand.InstructionMode = HAL_OSPI_INSTRUCTION_1_LINE;
+    sCommand.Instruction = reg_cmd;
+    sCommand.AddressMode = HAL_OSPI_ADDRESS_NONE;
+    sCommand.AlternateBytesMode = HAL_OSPI_ALTERNATE_BYTES_NONE;
+    sCommand.DataMode = HAL_OSPI_DATA_1_LINE;
+    sCommand.NbData = 1;
+    sCommand.DummyCycles = 0;
+    sCommand.DQSMode = HAL_OSPI_DQS_DISABLE;
+    sCommand.SIOOMode = HAL_OSPI_SIOO_INST_EVERY_CMD;
+
+    // Send the command
+    if (HAL_OSPI_Command(&hospi1, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    // Receive the data
+    if (HAL_OSPI_Receive(&hospi1, reg, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    printf("Status Register 1: 0x%02X\n", reg[0]);
+
+    // Now read status register-2
+    reg_cmd = 0x35;  // Command to read status register-2
+
+    // Update the instruction
+    sCommand.Instruction = reg_cmd;
+
+    // Send the command
+    if (HAL_OSPI_Command(&hospi1, &sCommand, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    // Receive the data
+    if (HAL_OSPI_Receive(&hospi1, reg, HAL_OSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+        Error_Handler();
+    }
+
+    printf("Status Register 2: 0x%02X\n", reg[0]);
+}
+
 
 
 // print a large number with commas
@@ -656,6 +871,35 @@ void interp()
                     }
                 }
             }
+
+
+//              //                              //
+        HELP(  "q                              qspi test")
+        else if(buf[0]=='q')
+            {
+            if(*p == 'r')
+                {
+                skip(&p);
+                int addr = gethex(&p);
+
+                QSPI_ReadPage(&hospi1, addr, qbuf, 256);
+                dump(qbuf, 256);
+                }
+            else if(*p == 's')
+                {
+                read_status_registers();
+                }
+            else if(*p == 'w')
+                {
+
+                }
+            if(*p == 'e')
+                {
+
+                }
+            }
+
+
 
 
 

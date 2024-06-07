@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "octospi.h"
 #include "spi.h"
 #include "tim.h"
 #include "usb_device.h"
@@ -115,6 +116,7 @@ int main(void)
   MX_TIM2_Init();
   MX_ADC3_Init();
   MX_SPI2_Init();
+  MX_OCTOSPI1_Init();
   /* USER CODE BEGIN 2 */
 
   extern void vcp_init();  
