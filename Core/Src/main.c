@@ -30,6 +30,8 @@
 /* USER CODE BEGIN Includes */
 
 #include "usbd_cdc_if.h"
+#include "ff.h"
+#include "diskio.h"
 
 /* USER CODE END Includes */
 
@@ -126,6 +128,9 @@ int main(void)
 
   /* start TIM2, whihc is used for the 1 usec clock */
   HAL_TIM_Base_Start(&htim2);
+
+  extern Diskio_drvTypeDef  USER_Driver;
+  FATFS_LinkDriver(&USER_Driver, "0:");
 
   extern void background();
   background();

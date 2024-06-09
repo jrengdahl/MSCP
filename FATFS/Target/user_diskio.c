@@ -35,6 +35,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
 #include "ff_gen_drv.h"
+#include "QSPI.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -81,8 +82,8 @@ DSTATUS USER_initialize (
 )
 {
   /* USER CODE BEGIN INIT */
-    Stat = STA_NOINIT;
-    return Stat;
+    // Initialize the SPI-NOR flash (already initialized in main)
+    return RES_OK;
   /* USER CODE END INIT */
 }
 
@@ -96,8 +97,8 @@ DSTATUS USER_status (
 )
 {
   /* USER CODE BEGIN STATUS */
-    Stat = STA_NOINIT;
-    return Stat;
+    // Return the status of the SPI-NOR flash
+    return RES_OK;
   /* USER CODE END STATUS */
 }
 
@@ -117,7 +118,16 @@ DRESULT USER_read (
 )
 {
   /* USER CODE BEGIN READ */
+
+    uint32_t address = sector * QSPI_SECTOR_SIZE;
+    for (UINT i = 0; i < count*2; i++)
+        {
+        if (QSPI_ReadPage(&hospi1, address, buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
+        address += QSPI_PAGE_SIZE;
+        }
+
     return RES_OK;
+
   /* USER CODE END READ */
 }
 
@@ -136,9 +146,21 @@ DRESULT USER_write (
 	DWORD sector,       /* Sector address in LBA */
 	UINT count          /* Number of sectors to write */
 )
-{
-  /* USER CODE BEGIN WRITE */
-  /* USER CODE HERE */
+    {
+    /* USER CODE BEGIN WRITE */
+
+    uint32_t address = sector * QSPI_SECTOR_SIZE;
+    for (UINT i = 0; i < count*2; i++)
+        {
+        if((address & (QSPI_BLOCK_SIZE-1)) == 0
+        && QSPI_EraseSector(&hospi1, address) != HAL_OK)
+            {
+            return RES_ERROR;
+            }
+        if (QSPI_WritePage(&hospi1, address, (uint8_t *)buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
+        address += QSPI_PAGE_SIZE;
+        }
+
     return RES_OK;
   /* USER CODE END WRITE */
 }
@@ -159,8 +181,22 @@ DRESULT USER_ioctl (
 )
 {
   /* USER CODE BEGIN IOCTL */
-    DRESULT res = RES_ERROR;
-    return res;
+    switch (cmd)
+    {
+    case CTRL_SYNC:
+        return RES_OK;
+    case GET_SECTOR_COUNT:
+        *(DWORD *)buff = QSPI_TOTAL_SIZE / QSPI_SECTOR_SIZE;
+        return RES_OK;
+    case GET_SECTOR_SIZE:
+        *(WORD *)buff = QSPI_SECTOR_SIZE;
+        return RES_OK;
+    case GET_BLOCK_SIZE:
+        *(DWORD *)buff = QSPI_BLOCK_SIZE / QSPI_SECTOR_SIZE;
+        return RES_OK;
+    default:
+        return RES_PARERR;
+    }
   /* USER CODE END IOCTL */
 }
 #endif /* _USE_IOCTL == 1 */
