@@ -121,7 +121,7 @@ void getline(   char *buf,                                                      
     {
     int i;                                                                      // general purpose loop counter
     int c;                                                                      // current input character
-    int x=0;                                                                    // cursor postion
+    int x=0;                                                                    // cursor position
     int n=0;                                                                    // length of line
     int tll=0;
     

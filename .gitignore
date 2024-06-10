@@ -4,4 +4,5 @@
 /Debug/
 /test.cpp
 *.pdf
-/image.img
+*.img
+list

@@ -11,6 +11,7 @@
 #include "Port.hpp"
 #include "CriticalRegion.hpp"
 #include "usbd_cdc_if.h"
+#include "tim.h"
 
 extern "C" const char *strnchr(const char *s, int n, int c);
 
@@ -20,6 +21,20 @@ Port rxPort;
 FIFO<char, 64> ConsoleFifo;
 
 bool ControlC = false;
+bool SerialRaw = false;
+
+extern "C"
+int __io_kbhit()                                // test for input
+    {
+    if(ConsoleFifo)
+        {
+        return 1;
+        }
+    else
+        {
+        return 0;
+        }
+    }
 
 
 extern "C"
@@ -42,6 +57,28 @@ int __io_getchar()                              // link the CMSIS syslib to the 
 
     return ch;
     }
+
+
+extern "C"
+int __io_getchart(unsigned timeout)                      // getch with timeout
+    {
+    char ch;
+    uint32_t start = __HAL_TIM_GET_COUNTER(&htim2);
+
+    do
+        {
+        if(ConsoleFifo)
+            {
+            ConsoleFifo.take(ch);
+
+            return ch;
+            }
+        yield();
+        }
+    while(__HAL_TIM_GET_COUNTER(&htim2) - start < timeout);
+    return -1;
+    }
+
 
 // refactored code: atomically wrap the test and wait for txready, then output the buffer
 static void vcp_writeblock(uint8_t* Buf1, uint16_t Len1, uint8_t* Buf2 = 0, uint16_t Len2 = 0)
@@ -110,7 +147,7 @@ void vcp_rx_callback(uint8_t *Buf, uint32_t Len)
         {
         char ch = Buf[i];
 
-        if(ch == 'C'-'@')
+        if(ch == 'C'-'@' && !SerialRaw)
             {
             ControlC = true;
             }

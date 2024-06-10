@@ -108,6 +108,7 @@ void interp()
         yield();
         libgomp_reinit();                                                       // reset things in OPenMP such as the default number of threads
         ControlC = false;
+        SerialRaw = false;
         putchar('>');                                                           // output the command line prompt
         fflush(stdout);
         waiting_for_command = true;
@@ -699,14 +700,14 @@ void interp()
             {
             if(*p == 'r')
                 {
-                int size = 1;
+                int count = 1;
 
                 skip(&p);
                 uint32_t addr = gethex(&p);
                 skip(&p);
-                if(isxdigit(*p))size = gethex(&p);
+                if(isxdigit(*p))count = gethex(&p);
 
-                for(int i=0; i<size; i++)
+                for(int i=0; i<count; i++)
                     {
                     QSPI_ReadPage(&hospi1, addr, (uint8_t *)&qbuf, 256);
                     printf("%08x\n", (unsigned)addr);
@@ -733,10 +734,18 @@ void interp()
                 }
             else if(p[0] == 'e' && p[1] != 'e')
                 {
+                int count = 1;
+
                 skip(&p);
                 uint32_t addr = gethex(&p);
+                skip(&p);
+                if(isxdigit(*p))count = gethex(&p);
 
-                QSPI_EraseSector(&hospi1, addr);
+                for(int i=0; i<count; i++)
+                    {
+                    QSPI_EraseSector(&hospi1, addr);
+                    addr += 256;
+                    }
                 }
             else if(p[0] == 'e' && p[1] == 'e')
                 {
@@ -744,6 +753,16 @@ void interp()
                 QSPI_EraseChip(&hospi1);
                 printf("erasing complete\n");
                 }
+            else if(p[0] == 'x')
+                {
+                int res;
+
+                extern int xmodem_receive(uint8_t *buf);
+                res = xmodem_receive((uint8_t *)&qbuf);
+                if(res==0)printf("file received OK\n");
+                else printf("xmodem transfer failed %d\n", res);
+                }
+            else printf("unrecognized subcommand\n");
             }
 
 
@@ -772,6 +791,17 @@ void interp()
                         }
                     }
                 }
+            else if(p[0] == 'm')
+                {
+                if(f_mount(&FatFs, "0:", 1) != FR_OK)
+                    {
+                    printf("FATFS mount error on SPI-NOR\n");
+                    }
+                else
+                    {
+                    printf("FATFS mount OK on SPI-NOR\n");
+                    }
+                }
             else if(p[0] == 'w')
                 {
 
@@ -786,28 +816,36 @@ void interp()
                 }
             else if(p[0] == 'r')
                 {
-                // Read from the file
-                if(f_open(&fil, "0:hello.txt", FA_READ) == FR_OK)
-                    {
-                    char buffer[20];
+                skip(&p);
 
-                    UINT br; // Bytes read
-                    if(f_read(&fil, buffer, sizeof(buffer), &br) == FR_OK)
+                // Read from the file
+                if(f_open(&fil, p, FA_READ) == FR_OK)
+                    {
+                    unsigned br; // Bytes read
+                    FRESULT res;
+
+                    do
                         {
-                        printf("%s\n", buffer);
+                        res = f_read(&fil, qbuf, sizeof(qbuf), &br);
+                        if(res == FR_OK)
+                            {
+                            dump(qbuf, br);
+                            }
                         }
-                    else
-                        {
-                        printf("read error on hello.txt\n");
-                        }
+                    while(res == FR_OK
+                       && br == sizeof(qbuf)
+                       && !ControlC);
+
+                    printf("res = %d\n", res);
 
                     f_close(&fil);
                     }
                 else
                     {
-                    printf("file hello.txt could not be opened\n");
+                    printf("file %s could not be opened\n", p);
                     }
                 }
+            else printf("unrecognized subcommand\n");
             }
 
         // print the help screen

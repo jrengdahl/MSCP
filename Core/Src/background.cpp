@@ -93,6 +93,7 @@ void background()                                       // powerup init and back
                 undefer();                              // wake any threads that called yield
                 }
 
+            // this wakes up the chip temperature polling thread every 100 ms
             uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
             if(waiting_for_command && (now - last_temp_sample > 100000))
                 {
@@ -109,10 +110,10 @@ void background()                                       // powerup init and back
 
     else if(omp_get_thread_num() == 2)                  // and thread 2 runs this:
         {
-        temperature_monitor();                          // run the command line interpreter
+        temperature_monitor();                          // run the temperature monitor
         }
 
-    // neither of the above two threads terminate, so the parallel never ends, and we should never get here
+    // neither of the above threads terminate, so the parallel never ends, and we should never get here
     assert(false==true);                                // Woe to those who call evil good, and good evil
     }
 
