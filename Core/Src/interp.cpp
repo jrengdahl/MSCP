@@ -845,6 +845,38 @@ void interp()
                     printf("file %s could not be opened\n", p);
                     }
                 }
+            else if(p[0] == 'l' && p[1] == 's')
+                {
+                skip(&p);
+
+                FRESULT res;
+                DIR dir;
+                FILINFO fno;
+
+                // Open the directory
+                res = f_opendir(&dir, p); /* Open the directory */
+                if (res == FR_OK)
+                    {
+                    while (1)
+                        {
+                        res = f_readdir(&dir, &fno);                    /* Read a directory item */
+                        if (res != FR_OK || fno.fname[0] == 0) break;   /* Break on error or end of dir */
+                        if (fno.fattrib & AM_DIR)
+                            {                     /* It is a directory */
+                            printf("  <DIR>  %s\n", fno.fname);
+                            }
+                        else
+                            {                                        /* It is a file */
+                            printf("  %8lu  %s\n", fno.fsize, fno.fname);
+                            }
+                        }
+                    f_closedir(&dir);
+                    }
+                else
+                    {
+                    printf("Failed to open directory: %d\n", res);
+                    }
+                }
             else printf("unrecognized subcommand\n");
             }
 
