@@ -57,6 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define CRESET_N_Pin GPIO_PIN_0
+#define CRESET_N_GPIO_Port GPIOA
 #define LED2_Pin GPIO_PIN_9
 #define LED2_GPIO_Port GPIOC
 #define LED1_Pin GPIO_PIN_10

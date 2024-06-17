@@ -695,7 +695,7 @@ void interp()
 
 
 //              //                              //
-        HELP(  "q                              qspi test")
+        HELP(  "q                               QSPI tests")
         else if(buf[0]=='q' && buf[1]==' ')
             {
             if(*p == 'r')
@@ -879,6 +879,29 @@ void interp()
                 }
             else printf("unrecognized subcommand\n");
             }
+
+
+//              //                              //
+        HELP(  "fpga <cmd>                      FPGA menu")
+        else if(buf[0]=='f' && buf[1] == 'p' && buf[2] == 'g' && buf[3] == 'a')
+            {
+            if(p[0] == 'c' && p[1] == 'r')
+                {
+                skip(&p);
+                if(isdigit(*p))
+                    {
+                    int val = getdec(&p);
+                    HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(val));
+                    }
+                else
+                    {
+                    HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(0));
+                    HAL_Delay(2);
+                    HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(1));
+                    }
+                }
+            }
+
 
         // print the help screen
         else if(buf[0]=='?')

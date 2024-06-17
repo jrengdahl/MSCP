@@ -146,8 +146,8 @@ DRESULT USER_write (
 	DWORD sector,       /* Sector address in LBA */
 	UINT count          /* Number of sectors to write */
 )
-    {
-    /* USER CODE BEGIN WRITE */
+{
+  /* USER CODE BEGIN WRITE */
 
     uint32_t address = sector * QSPI_SECTOR_SIZE;
     for (UINT i = 0; i < count*2; i++)
