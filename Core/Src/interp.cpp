@@ -386,30 +386,100 @@ void interp()
             }
 
 
-        //              //                              //
+//              //                              //
         HELP(  "ldr <addr>                      load a word from address using ldr")
-        else if(buf[0]=='l' && buf[1]=='d' && buf[2]=='r')
+        else if(buf[0]=='l' && buf[1]=='d' && buf[2]=='r' && buf[3]==' ')
             {
             uintptr_t addr = gethex(&p);            // get the address
             uint32_t value;
 
-            __asm__ __volatile__("ldr %0, [%1]"     // load a word from the given address
+            __asm__ __volatile__(
+                "dsb SY            \n\t"
+                "ldr %0, [%1]"     // load a word from the given address
              : "=r"(value)
              : "r"(addr)
              : );
 
-            printf("%lx\n", value);                 // print the result
+            printf("%08lx\n", value);               // print the result
             }
 
 //              //                              //
-        HELP(  "str <value> <addr>              store value to address using str")
-        else if(buf[0]=='s' && buf[1]=='t' && buf[2]=='r')
+        HELP(  "ldrh <addr>                     load a halfword from address using ldrh")
+        else if(buf[0]=='l' && buf[1]=='d' && buf[2]=='r' && buf[3]=='h')
+            {
+            uintptr_t addr = gethex(&p);            // get the address
+            uint32_t value;
+
+            __asm__ __volatile__(
+                "dsb SY            \n\t"
+                "ldrh %0, [%1]"     // load a word from the given address
+             : "=r"(value)
+             : "r"(addr)
+             : );
+
+            printf("%04lx\n", value);                // print the result
+            }
+
+//              //                              //
+        HELP(  "ldrb <addr>                     load a byte from address using ldrb")
+        else if(buf[0]=='l' && buf[1]=='d' && buf[2]=='r' && buf[3]=='b')
+            {
+            uintptr_t addr = gethex(&p);            // get the address
+            uint32_t value;
+
+            __asm__ __volatile__(
+                "dsb SY            \n\t"
+                "ldrb %0, [%1]"     // load a word from the given address
+             : "=r"(value)
+             : "r"(addr)
+             : );
+
+            printf("%02lx\n", value);                 // print the result
+            }
+
+//              //                              //
+        HELP(  "str <value> <addr>              store word to address using str")
+        else if(buf[0]=='s' && buf[1]=='t' && buf[2]=='r' && buf[3]==' ')
             {
             uint32_t value = gethex(&p);
             skip(&p);
             uintptr_t addr = gethex(&p);            // get the address
 
-            __asm__ __volatile__("str %0, [%1]"
+            __asm__ __volatile__(
+                    "str %0, [%1]       \n\t"
+                    "dsb SY"
+            :
+            : "r"(value), "r"(addr)
+            : );
+            }
+
+//              //                              //
+        HELP(  "strh <value> <addr>             store a halfword to address using strh")
+        else if(buf[0]=='s' && buf[1]=='t' && buf[2]=='r' && buf[3]=='h')
+            {
+            uint32_t value = gethex(&p);
+            skip(&p);
+            uintptr_t addr = gethex(&p);            // get the address
+
+            __asm__ __volatile__(
+                "strh %0, [%1]       \n\t"
+                "dsb SY"
+            :
+            : "r"(value), "r"(addr)
+            : );
+            }
+
+//              //                              //
+        HELP(  "strb <value> <addr>             store a byte to address using strb")
+        else if(buf[0]=='s' && buf[1]=='t' && buf[2]=='r' && buf[3]=='b')
+            {
+            uint32_t value = gethex(&p);
+            skip(&p);
+            uintptr_t addr = gethex(&p);            // get the address
+
+            __asm__ __volatile__(
+                "strb %0, [%1]       \n\t"
+                "dsb SY"
             :
             : "r"(value), "r"(addr)
             : );

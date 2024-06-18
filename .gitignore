@@ -6,3 +6,4 @@
 *.pdf
 *.img
 list
+/ft232h.conf
