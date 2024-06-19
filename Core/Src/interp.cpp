@@ -43,6 +43,30 @@ static FATFS FatFs;
 static FIL fil;
 static uint32_t qbuf[512/4];
 
+uint32_t table[]=
+        {
+        0x00000000,
+        0x11111111,
+        0x22222222,
+        0x33333333,
+        0x44444444,
+        0x55555555,
+        0x66666666,
+        0x77777777,
+        0x88888888,
+        0x99999999,
+        0xaaaaaaaa,
+        0xbbbbbbbb,
+        0xcccccccc,
+        0xdddddddd,
+        0xeeeeeeee,
+        0xffffffff,
+        0x12345678,
+        0x23456789,
+        0x3456789a,
+        0x456789ab
+        };
+
 
 
 void print_status_register(uint8_t regCommand)
@@ -393,6 +417,8 @@ void interp()
             uintptr_t addr = gethex(&p);            // get the address
             uint32_t value;
 
+            SCB->DCCIMVAC = addr;
+
             __asm__ __volatile__(
                 "dsb SY            \n\t"
                 "ldr %0, [%1]"     // load a word from the given address
@@ -410,6 +436,8 @@ void interp()
             uintptr_t addr = gethex(&p);            // get the address
             uint32_t value;
 
+            SCB->DCCIMVAC = addr;
+
             __asm__ __volatile__(
                 "dsb SY            \n\t"
                 "ldrh %0, [%1]"     // load a word from the given address
@@ -426,6 +454,8 @@ void interp()
             {
             uintptr_t addr = gethex(&p);            // get the address
             uint32_t value;
+
+            SCB->DCCIMVAC = addr;
 
             __asm__ __volatile__(
                 "dsb SY            \n\t"
@@ -451,6 +481,8 @@ void interp()
             :
             : "r"(value), "r"(addr)
             : );
+
+            SCB->DCCMVAC = addr;
             }
 
 //              //                              //
@@ -467,6 +499,8 @@ void interp()
             :
             : "r"(value), "r"(addr)
             : );
+
+            SCB->DCCMVAC = addr;
             }
 
 //              //                              //
@@ -483,6 +517,8 @@ void interp()
             :
             : "r"(value), "r"(addr)
             : );
+
+            SCB->DCCMVAC = addr;
             }
 
 
@@ -969,6 +1005,38 @@ void interp()
                     HAL_Delay(2);
                     HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(1));
                     }
+                }
+            else if(p[0] == '1')
+                {
+                skip(&p);
+                uint32_t addr = gethex(&p);
+                uint16_t volatile *hword = (uint16_t volatile *)addr;
+
+                hword[0] = 0x2211;
+                hword[1] = 0x4433;
+                hword[2] = 0x6655;
+                hword[3] = 0x8877;
+
+                SCB->DCCIMVAC = addr;
+
+                uint16_t rb[4];
+                rb[0] = hword[0];
+                rb[1] = hword[1];
+                rb[2] = hword[2];
+                rb[3] = hword[3];
+
+                printf("%04x %04x %04x %04x\n", rb[0], rb[1], rb[2], rb[3]);
+                }
+            else if(p[0] == '2')
+                {
+                skip(&p);
+                uint32_t *addr = (uint32_t *)gethex(&p);
+
+                memcpy32(addr, table, sizeof(table));
+                SCB->DCCIMVAC = (uint32_t)addr;
+                SCB->DCCIMVAC = (uint32_t)addr+32;
+                SCB->DCCIMVAC = (uint32_t)addr+64;
+                memcpy32(qbuf, addr, sizeof(table));
                 }
             }
 

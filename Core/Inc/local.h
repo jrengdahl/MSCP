@@ -22,5 +22,7 @@ extern "C" void trigoff();
 
 #define fflush(x)
 
+extern "C" void memcpy32(uint32_t *dst, uint32_t *src, uint32_t size);
+
 #endif
 
