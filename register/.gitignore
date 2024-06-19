@@ -1,0 +1,10 @@
+/efinity_dbg.jtag.log
+/efinity_dbg.jtag.log.1
+/la0_waveform.gtkw
+/la0_waveform.vcd
+*.log
+/outflow
+/work_dbg
+/work_pnr
+/work_pt
+/work_syn

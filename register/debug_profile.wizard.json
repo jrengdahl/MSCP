@@ -1,0 +1,514 @@
+{
+    "debug_cores": [
+        {
+            "name": "la0",
+            "type": "la",
+            "uuid": "9680064ac1bf4085b93d1d1f969287b4",
+            "trigin_en": false,
+            "trigout_en": false,
+            "auto_inserted": true,
+            "capture_control": false,
+            "data_depth": 2048,
+            "input_pipeline": 1,
+            "probes": [
+                {
+                    "name": "NE1",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NL",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NOE",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NWE",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NBL0",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NBL1",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "A",
+                    "width": 7,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DA_IN",
+                    "width": 16,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DA_OUT",
+                    "width": 16,
+                    "probe_type": 1
+                }
+            ]
+        }
+    ],
+    "connections": [
+        {
+            "command": "add_ports",
+            "id": 1,
+            "args": {
+                "netlist": "fmc",
+                "ports": [
+                    {
+                        "name": "jtag_inst1_CAPTURE",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_DRCK",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_RESET",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_RUNTEST",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_SEL",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_SHIFT",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TCK",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TDI",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TMS",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_UPDATE",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TDO",
+                        "dir": "out",
+                        "width": 1
+                    }
+                ]
+            }
+        },
+        {
+            "command": "instantiate",
+            "netlist": "edb_top",
+            "id": 2,
+            "instance": "edb_top_inst"
+        },
+        {
+            "command": "connect",
+            "id": 3,
+            "args": {
+                "instance": "edb_top_inst",
+                "ports": [
+                    {
+                        "name": "bscan_CAPTURE",
+                        "net": "jtag_inst1_CAPTURE"
+                    },
+                    {
+                        "name": "bscan_DRCK",
+                        "net": "jtag_inst1_DRCK"
+                    },
+                    {
+                        "name": "bscan_RESET",
+                        "net": "jtag_inst1_RESET"
+                    },
+                    {
+                        "name": "bscan_RUNTEST",
+                        "net": "jtag_inst1_RUNTEST"
+                    },
+                    {
+                        "name": "bscan_SEL",
+                        "net": "jtag_inst1_SEL"
+                    },
+                    {
+                        "name": "bscan_SHIFT",
+                        "net": "jtag_inst1_SHIFT"
+                    },
+                    {
+                        "name": "bscan_TCK",
+                        "net": "jtag_inst1_TCK"
+                    },
+                    {
+                        "name": "bscan_TDI",
+                        "net": "jtag_inst1_TDI"
+                    },
+                    {
+                        "name": "bscan_TMS",
+                        "net": "jtag_inst1_TMS"
+                    },
+                    {
+                        "name": "bscan_UPDATE",
+                        "net": "jtag_inst1_UPDATE"
+                    },
+                    {
+                        "name": "bscan_TDO",
+                        "net": "jtag_inst1_TDO"
+                    },
+                    {
+                        "name": "la0_clk",
+                        "net": "clock",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe0",
+                        "net": "NE1",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe1",
+                        "net": "NL",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe2",
+                        "net": "NOE",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe3",
+                        "net": "NWE",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe4",
+                        "net": "NBL0",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe5",
+                        "net": "NBL1",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[0]",
+                        "net": "A[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[1]",
+                        "net": "A[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[2]",
+                        "net": "A[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[3]",
+                        "net": "A[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[4]",
+                        "net": "A[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[5]",
+                        "net": "A[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[6]",
+                        "net": "A[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[0]",
+                        "net": "DA_IN[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[1]",
+                        "net": "DA_IN[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[2]",
+                        "net": "DA_IN[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[3]",
+                        "net": "DA_IN[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[4]",
+                        "net": "DA_IN[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[5]",
+                        "net": "DA_IN[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[6]",
+                        "net": "DA_IN[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[7]",
+                        "net": "DA_IN[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[8]",
+                        "net": "DA_IN[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[9]",
+                        "net": "DA_IN[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[10]",
+                        "net": "DA_IN[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[11]",
+                        "net": "DA_IN[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[12]",
+                        "net": "DA_IN[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[13]",
+                        "net": "DA_IN[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[14]",
+                        "net": "DA_IN[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[15]",
+                        "net": "DA_IN[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[0]",
+                        "net": "DA_OUT[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[1]",
+                        "net": "DA_OUT[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[2]",
+                        "net": "DA_OUT[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[3]",
+                        "net": "DA_OUT[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[4]",
+                        "net": "DA_OUT[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[5]",
+                        "net": "DA_OUT[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[6]",
+                        "net": "DA_OUT[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[7]",
+                        "net": "DA_OUT[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[8]",
+                        "net": "DA_OUT[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[9]",
+                        "net": "DA_OUT[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[10]",
+                        "net": "DA_OUT[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[11]",
+                        "net": "DA_OUT[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[12]",
+                        "net": "DA_OUT[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[13]",
+                        "net": "DA_OUT[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[14]",
+                        "net": "DA_OUT[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[15]",
+                        "net": "DA_OUT[15]",
+                        "path": []
+                    }
+                ]
+            }
+        }
+    ],
+    "vdbs": [
+        {
+            "file": "debug_top.post.vdb",
+            "instance": "edb_top_inst"
+        }
+    ],
+    "session": {
+        "wizard": {
+            "data_depth": 2048,
+            "capture_control": false,
+            "selected_nets": [
+                {
+                    "name": "NE1",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NL",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NOE",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NWE",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NBL0",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NBL1",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "A",
+                    "width": 7,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 6,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "DA_IN",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "DA_OUT",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                }
+            ],
+            "top_module": "fmc",
+            "db_checksum": "ba5fce12098a2c03e7bae2e9a172d1842464edfca8e284870b3519e987537970",
+            "src": "elaborate",
+            "jtag_user": "USER1",
+            "input_pipeline": 1
+        }
+    }
+}
