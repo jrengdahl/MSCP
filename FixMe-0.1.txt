@@ -1,0 +1,41 @@
+This document lists the fixes needed for rev 0.1 of the Qbus SSD board.
+
+
+Change the oscillator from 8 MHz to 10 MHz. 10 MHz is the minimum the PLL can use for a reference clock. Until then, the
+8 MHz input seems to work. You just have to tell the PLL wizard that the input is 10 Hz. If you want a 100 MHz output from
+the PLL tell it to generate 125 MHz. It will get scaled by 10/8 to generate an actual output of 100 MHz.
+
+
+Exchange BDAL4f and NWAIT on the FPGA. This is because CSI needs to be pulled high while programming the FPGA, however, BDAL4F
+was driving CSI low. NWAIT is an FPGA output which floats at powerup, so the pullup works. The same requirement applies to
+TEST_N, which currently has a pullup and no other use. 
+
+
+TEST_N is actually a GPIO which currently has no use or connection. It should be connected to an LED or something, as long as
+it is an output.
+
+
+10K pulldowns are needed on the gates of all MOSFETS. Without the pulldown, at powerup, while the MCU or FPGA pins driving
+the gates are still floating, the gates will eventually float high and turn on the MOSFETS. For LED drivers this is simply
+wierd looking, as the LEDs slowly get brighter until they are full on, but for the Qbus drivers this is not a good thing.
+
+
+Need to change the FPGA JTAG connector to match the Efinix programming cable. Also need to connect CRESET_N to that connector.
+The programming cable pulses CRESET_N before programming the chip. Until this is done it has to be pulsed via an MCU output.
+
+
+The 8 LEDs with holders are backwards. The fix for now is to remove the LED from the holder, reverse it, and re-bend the leads,
+before soldering it in.
+
+
+On the next board, try to get more through-hole parts assembled by JLCPCB.
+
+
+Note that the address output by the FMC is shifted right by one at the MCU pins, since the byte enables, NLB0 and NLB1, convey the low order address bit.
+What this means is that when you tell the FMC configurator to output a 23 bit address, you actually get 24 bits of address inside the MCU,
+which results in a 16 megabyte address space. I will leave A22 in the design. Having multiple mappings of the 4 megabyte QBus address space
+might be useful. For example, I can have one copy mapped as Device memory, and another copy cached (Normal).
+
+A 23 bit address is the largest useable FMC address on the STM32H723ZG, since A24 would conflict with the trace port.
+
+
