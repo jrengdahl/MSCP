@@ -1,0 +1,1185 @@
+{
+    "debug_cores": [
+        {
+            "name": "la0",
+            "type": "la",
+            "uuid": "e61b627a37534507859ed1a0057576ea",
+            "trigin_en": false,
+            "trigout_en": false,
+            "auto_inserted": true,
+            "capture_control": false,
+            "data_depth": 256,
+            "input_pipeline": 1,
+            "probes": [
+                {
+                    "name": "NE1",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NL",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NOE",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NWE",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NBL0",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NBL1",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DA_IN",
+                    "width": 16,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DA_OUT",
+                    "width": 16,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DA_OE",
+                    "width": 16,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BSYNCf",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BWTBTf",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDINf",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDOUTf",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BRPLYg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "Qaddress",
+                    "width": 22,
+                    "probe_type": 1
+                },
+                {
+                    "name": "Qselected",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "Outbound",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDALf_IN",
+                    "width": 22,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDALf_OUT",
+                    "width": 22,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDALf_OE",
+                    "width": 22,
+                    "probe_type": 1
+                }
+            ]
+        }
+    ],
+    "connections": [
+        {
+            "command": "add_ports",
+            "id": 1,
+            "args": {
+                "netlist": "qbus",
+                "ports": [
+                    {
+                        "name": "jtag_inst1_CAPTURE",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_DRCK",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_RESET",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_RUNTEST",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_SEL",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_SHIFT",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TCK",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TDI",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TMS",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_UPDATE",
+                        "dir": "in",
+                        "width": 1
+                    },
+                    {
+                        "name": "jtag_inst1_TDO",
+                        "dir": "out",
+                        "width": 1
+                    }
+                ]
+            }
+        },
+        {
+            "command": "instantiate",
+            "netlist": "edb_top",
+            "id": 2,
+            "instance": "edb_top_inst"
+        },
+        {
+            "command": "connect",
+            "id": 3,
+            "args": {
+                "instance": "edb_top_inst",
+                "ports": [
+                    {
+                        "name": "bscan_CAPTURE",
+                        "net": "jtag_inst1_CAPTURE"
+                    },
+                    {
+                        "name": "bscan_DRCK",
+                        "net": "jtag_inst1_DRCK"
+                    },
+                    {
+                        "name": "bscan_RESET",
+                        "net": "jtag_inst1_RESET"
+                    },
+                    {
+                        "name": "bscan_RUNTEST",
+                        "net": "jtag_inst1_RUNTEST"
+                    },
+                    {
+                        "name": "bscan_SEL",
+                        "net": "jtag_inst1_SEL"
+                    },
+                    {
+                        "name": "bscan_SHIFT",
+                        "net": "jtag_inst1_SHIFT"
+                    },
+                    {
+                        "name": "bscan_TCK",
+                        "net": "jtag_inst1_TCK"
+                    },
+                    {
+                        "name": "bscan_TDI",
+                        "net": "jtag_inst1_TDI"
+                    },
+                    {
+                        "name": "bscan_TMS",
+                        "net": "jtag_inst1_TMS"
+                    },
+                    {
+                        "name": "bscan_UPDATE",
+                        "net": "jtag_inst1_UPDATE"
+                    },
+                    {
+                        "name": "bscan_TDO",
+                        "net": "jtag_inst1_TDO"
+                    },
+                    {
+                        "name": "la0_clk",
+                        "net": "clock",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe0",
+                        "net": "NE1",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe1",
+                        "net": "NL",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe2",
+                        "net": "NOE",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe3",
+                        "net": "NWE",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe4",
+                        "net": "NBL0",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe5",
+                        "net": "NBL1",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[0]",
+                        "net": "DA_IN[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[1]",
+                        "net": "DA_IN[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[2]",
+                        "net": "DA_IN[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[3]",
+                        "net": "DA_IN[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[4]",
+                        "net": "DA_IN[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[5]",
+                        "net": "DA_IN[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[6]",
+                        "net": "DA_IN[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[7]",
+                        "net": "DA_IN[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[8]",
+                        "net": "DA_IN[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[9]",
+                        "net": "DA_IN[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[10]",
+                        "net": "DA_IN[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[11]",
+                        "net": "DA_IN[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[12]",
+                        "net": "DA_IN[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[13]",
+                        "net": "DA_IN[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[14]",
+                        "net": "DA_IN[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[15]",
+                        "net": "DA_IN[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[0]",
+                        "net": "DA_OUT[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[1]",
+                        "net": "DA_OUT[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[2]",
+                        "net": "DA_OUT[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[3]",
+                        "net": "DA_OUT[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[4]",
+                        "net": "DA_OUT[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[5]",
+                        "net": "DA_OUT[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[6]",
+                        "net": "DA_OUT[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[7]",
+                        "net": "DA_OUT[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[8]",
+                        "net": "DA_OUT[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[9]",
+                        "net": "DA_OUT[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[10]",
+                        "net": "DA_OUT[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[11]",
+                        "net": "DA_OUT[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[12]",
+                        "net": "DA_OUT[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[13]",
+                        "net": "DA_OUT[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[14]",
+                        "net": "DA_OUT[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7[15]",
+                        "net": "DA_OUT[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[0]",
+                        "net": "DA_OE[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[1]",
+                        "net": "DA_OE[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[2]",
+                        "net": "DA_OE[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[3]",
+                        "net": "DA_OE[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[4]",
+                        "net": "DA_OE[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[5]",
+                        "net": "DA_OE[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[6]",
+                        "net": "DA_OE[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[7]",
+                        "net": "DA_OE[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[8]",
+                        "net": "DA_OE[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[9]",
+                        "net": "DA_OE[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[10]",
+                        "net": "DA_OE[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[11]",
+                        "net": "DA_OE[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[12]",
+                        "net": "DA_OE[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[13]",
+                        "net": "DA_OE[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[14]",
+                        "net": "DA_OE[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[15]",
+                        "net": "DA_OE[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe9",
+                        "net": "BSYNCf",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe10",
+                        "net": "BWTBTf",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe11",
+                        "net": "BDINf",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe12",
+                        "net": "BDOUTf",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe13",
+                        "net": "BRPLYg",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[0]",
+                        "net": "Qaddress[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[1]",
+                        "net": "Qaddress[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[2]",
+                        "net": "Qaddress[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[3]",
+                        "net": "Qaddress[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[4]",
+                        "net": "Qaddress[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[5]",
+                        "net": "Qaddress[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[6]",
+                        "net": "Qaddress[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[7]",
+                        "net": "Qaddress[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[8]",
+                        "net": "Qaddress[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[9]",
+                        "net": "Qaddress[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[10]",
+                        "net": "Qaddress[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[11]",
+                        "net": "Qaddress[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[12]",
+                        "net": "Qaddress[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[13]",
+                        "net": "Qaddress[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[14]",
+                        "net": "Qaddress[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[15]",
+                        "net": "Qaddress[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[16]",
+                        "net": "Qaddress[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[17]",
+                        "net": "Qaddress[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[18]",
+                        "net": "Qaddress[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[19]",
+                        "net": "Qaddress[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[20]",
+                        "net": "Qaddress[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14[21]",
+                        "net": "Qaddress[21]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15",
+                        "net": "Qselected",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16",
+                        "net": "Outbound",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[0]",
+                        "net": "BDALf_IN[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[1]",
+                        "net": "BDALf_IN[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[2]",
+                        "net": "BDALf_IN[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[3]",
+                        "net": "BDALf_IN[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[4]",
+                        "net": "BDALf_IN[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[5]",
+                        "net": "BDALf_IN[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[6]",
+                        "net": "BDALf_IN[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[7]",
+                        "net": "BDALf_IN[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[8]",
+                        "net": "BDALf_IN[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[9]",
+                        "net": "BDALf_IN[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[10]",
+                        "net": "BDALf_IN[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[11]",
+                        "net": "BDALf_IN[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[12]",
+                        "net": "BDALf_IN[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[13]",
+                        "net": "BDALf_IN[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[14]",
+                        "net": "BDALf_IN[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[15]",
+                        "net": "BDALf_IN[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[16]",
+                        "net": "BDALf_IN[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[17]",
+                        "net": "BDALf_IN[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[18]",
+                        "net": "BDALf_IN[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[19]",
+                        "net": "BDALf_IN[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[20]",
+                        "net": "BDALf_IN[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[21]",
+                        "net": "BDALf_IN[21]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[0]",
+                        "net": "BDALf_OUT[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[1]",
+                        "net": "BDALf_OUT[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[2]",
+                        "net": "BDALf_OUT[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[3]",
+                        "net": "BDALf_OUT[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[4]",
+                        "net": "BDALf_OUT[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[5]",
+                        "net": "BDALf_OUT[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[6]",
+                        "net": "BDALf_OUT[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[7]",
+                        "net": "BDALf_OUT[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[8]",
+                        "net": "BDALf_OUT[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[9]",
+                        "net": "BDALf_OUT[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[10]",
+                        "net": "BDALf_OUT[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[11]",
+                        "net": "BDALf_OUT[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[12]",
+                        "net": "BDALf_OUT[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[13]",
+                        "net": "BDALf_OUT[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[14]",
+                        "net": "BDALf_OUT[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[15]",
+                        "net": "BDALf_OUT[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[16]",
+                        "net": "BDALf_OUT[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[17]",
+                        "net": "BDALf_OUT[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[18]",
+                        "net": "BDALf_OUT[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[19]",
+                        "net": "BDALf_OUT[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[20]",
+                        "net": "BDALf_OUT[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[21]",
+                        "net": "BDALf_OUT[21]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[0]",
+                        "net": "BDALf_OE[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[1]",
+                        "net": "BDALf_OE[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[2]",
+                        "net": "BDALf_OE[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[3]",
+                        "net": "BDALf_OE[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[4]",
+                        "net": "BDALf_OE[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[5]",
+                        "net": "BDALf_OE[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[6]",
+                        "net": "BDALf_OE[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[7]",
+                        "net": "BDALf_OE[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[8]",
+                        "net": "BDALf_OE[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[9]",
+                        "net": "BDALf_OE[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[10]",
+                        "net": "BDALf_OE[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[11]",
+                        "net": "BDALf_OE[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[12]",
+                        "net": "BDALf_OE[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[13]",
+                        "net": "BDALf_OE[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[14]",
+                        "net": "BDALf_OE[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[15]",
+                        "net": "BDALf_OE[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[16]",
+                        "net": "BDALf_OE[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[17]",
+                        "net": "BDALf_OE[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[18]",
+                        "net": "BDALf_OE[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[19]",
+                        "net": "BDALf_OE[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[20]",
+                        "net": "BDALf_OE[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19[21]",
+                        "net": "BDALf_OE[21]",
+                        "path": []
+                    }
+                ]
+            }
+        }
+    ],
+    "vdbs": [
+        {
+            "file": "debug_top.post.vdb",
+            "instance": "edb_top_inst"
+        }
+    ],
+    "session": {
+        "wizard": {
+            "data_depth": 256,
+            "capture_control": false,
+            "selected_nets": [
+                {
+                    "name": "NE1",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NL",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NOE",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NWE",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NBL0",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NBL1",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "DA_IN",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "DA_OUT",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "DA_OE",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "BSYNCf",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BWTBTf",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDINf",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDOUTf",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BRPLYg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "Qaddress",
+                    "width": 22,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "Qselected",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "Outbound",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDALf_IN",
+                    "width": 22,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "BDALf_OUT",
+                    "width": 22,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "BDALf_OE",
+                    "width": 22,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                }
+            ],
+            "top_module": "qbus",
+            "db_checksum": "ba5fce12098a2c03e7bae2e9a172d1842464edfca8e284870b3519e987537970",
+            "src": "elaborate",
+            "jtag_user": "USER1",
+            "input_pipeline": 1
+        }
+    }
+}
