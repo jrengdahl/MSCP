@@ -39,3 +39,5 @@ might be useful. For example, I can have one copy mapped as Device memory, and a
 A 23 bit address is the largest useable FMC address on the STM32H723ZG, since A24 would conflict with the trace port.
 
 
+Change the color of the LEDs so that it is easier to tell which LED is lit from a distance. The LEDs are a bit too bright.
+Perhaps change the second row of LEDs, or get rid of them.

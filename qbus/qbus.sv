@@ -17,14 +17,15 @@ module qbus (
     input logic [21:0] BDALf_IN,
     output logic [21:0] BDALf_OUT,
     output logic [21:0] BDALf_OE,
-    input logic BDOUTf,
-    output logic BRPLYg,
-    input logic BDINf,
     input logic BSYNCf,
+    input logic BDINf,
+    input logic BDOUTf,
+    input logic BRPLYf,
     input logic BWTBTf,
     input logic BBS7f,
     input logic BINITf,
     output logic Outbound,
+    output logic BRPLYg,
     
     // For now these are unused. Drive the MOSFET gates low, don't want them floating.
     output logic BSYNCg,
@@ -58,7 +59,7 @@ module qbus (
     logic Qselected;
 
     
-    assign Qselected = BBS7 && Qaddress[12:0] == QADDR[12:0];
+    assign Qselected = BBS7 && Qaddress[12:3] == QADDR[12:3];
     assign LED = register[0][0];
     assign PLL_RSTN = 1;
     
@@ -122,10 +123,10 @@ module qbus (
         // Qbus read operation
         if (Qselected && !BDINf)
             begin
-            BDALf_OUT[21:18] = 4'b1111;
-            BDALf_OUT[17] = 1;                          // memory parity error enable
-            BDALf_OUT[16] = 1;                          // memory parity error
-            BDALf_OUT[15:0] = ~register[Qaddress[2:1]]; // Drive the BDALf bus with register data
+            BDALf_OUT[21:18] = 4'b0000;
+            BDALf_OUT[17] = 0;                          // memory parity error enable
+            BDALf_OUT[16] = 0;                          // memory parity error
+            BDALf_OUT[15:0] = register[Qaddress[2:1]];  // Drive the BDALf bus with register data
             BDALf_OE = 22'h3FFFFF;                      // enable the FPGA bus drivers to output the data
             Outbound = 1;                               // enable the gate drivers
             BRPLYg = 1;                                 // assert the reply signal
