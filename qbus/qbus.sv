@@ -57,7 +57,6 @@ module qbus (
     logic WriteCycle;
     logic BBS7;
     logic Qselected;
-
     
     assign Qselected = BBS7 && Qaddress[12:3] == QADDR[12:3];
     assign LED = register[0][0];
@@ -103,13 +102,6 @@ module qbus (
             Faddress = {A, DA_IN, ~NBL1};
             end
 
-        // FMC write operation
-        if (!NE1 && !NWE)
-            begin
-            if (!NBL0) register[Faddress[2:1]][7:0] = DA_IN[7:0];   // Byte 0 write
-            if (!NBL1) register[Faddress[2:1]][15:8] = DA_IN[15:8]; // Byte 1 write
-            end
-            
         // FMC read operation
         if (!NE1 && !NOE)
             begin
@@ -117,6 +109,7 @@ module qbus (
             DA_OE = 16'hFFFF;
             end
 
+            
        
         // Qbus logic
                 
@@ -135,8 +128,6 @@ module qbus (
         // Qbus write operation
         if (Qselected && !BDOUTf)
             begin
-            if (BWTBTf || Qaddress[0] == 0) register[Qaddress[2:1]][7:0]  = ~BDALf_IN[7:0];      // Byte 0 write
-            if (BWTBTf || Qaddress[0] == 1) register[Qaddress[2:1]][15:8] = ~BDALf_IN[15:8];  // Byte 1 write
             BRPLYg = 1;                                 // assert the reply signal
             end
 
@@ -144,7 +135,21 @@ module qbus (
 
     always_ff @(posedge clock)
         begin
-        dummy = !dummy;
-        end
+        dummy <= !dummy;
+
+        // FMC write operation
+        if (!NE1 && !NWE)
+            begin
+            if (!NBL0) register[Faddress[2:1]][7:0]  <= DA_IN[7:0];   // Byte 0 write
+            if (!NBL1) register[Faddress[2:1]][15:8] <= DA_IN[15:8];  // Byte 1 write
+            end
             
+        if (Qselected && !BDOUTf)
+            begin
+            if (BWTBTf || Qaddress[0] == 0) register[Qaddress[2:1]][7:0]  <= ~BDALf_IN[7:0];      // Byte 0 write
+            if (BWTBTf || Qaddress[0] == 1) register[Qaddress[2:1]][15:8] <= ~BDALf_IN[15:8];  // Byte 1 write
+            end
+        end
+
+
 endmodule

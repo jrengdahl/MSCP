@@ -3,12 +3,12 @@
         {
             "name": "la0",
             "type": "la",
-            "uuid": "ddabce87ff664db2935f2d22c7723e7a",
+            "uuid": "30c857c51bd340f1987d6821868ebf90",
             "trigin_en": false,
             "trigout_en": false,
             "auto_inserted": true,
             "capture_control": true,
-            "data_depth": 2048,
+            "data_depth": 512,
             "input_pipeline": 1,
             "probes": [
                 {
@@ -32,27 +32,7 @@
                     "probe_type": 1
                 },
                 {
-                    "name": "BBS7f",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BWTBTf",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BINITf",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDALf_IN",
-                    "width": 22,
-                    "probe_type": 1
-                },
-                {
-                    "name": "Outbound",
+                    "name": "BRPLYg",
                     "width": 1,
                     "probe_type": 1
                 },
@@ -62,7 +42,35 @@
                     "probe_type": 1
                 },
                 {
-                    "name": "DA_OE[0]",
+                    "name": "Qaddress",
+                    "width": 22,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDALf_IN",
+                    "width": 22,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDALf_OUT",
+                    "width": 22,
+                    "probe_type": 1
+                }
+            ]
+        },
+        {
+            "name": "la1",
+            "type": "la",
+            "uuid": "bbf473b1b25b4de2abb32a5803172991",
+            "trigin_en": false,
+            "trigout_en": false,
+            "auto_inserted": true,
+            "capture_control": true,
+            "data_depth": 512,
+            "input_pipeline": 1,
+            "probes": [
+                {
+                    "name": "LED",
                     "width": 1,
                     "probe_type": 1
                 }
@@ -217,17 +225,122 @@
                     },
                     {
                         "name": "la0_probe4",
-                        "net": "BBS7f",
+                        "net": "BRPLYg",
                         "path": []
                     },
                     {
                         "name": "la0_probe5",
-                        "net": "BWTBTf",
+                        "net": "Qselected",
                         "path": []
                     },
                     {
-                        "name": "la0_probe6",
-                        "net": "BINITf",
+                        "name": "la0_probe6[0]",
+                        "net": "Qaddress[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[1]",
+                        "net": "Qaddress[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[2]",
+                        "net": "Qaddress[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[3]",
+                        "net": "Qaddress[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[4]",
+                        "net": "Qaddress[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[5]",
+                        "net": "Qaddress[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[6]",
+                        "net": "Qaddress[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[7]",
+                        "net": "Qaddress[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[8]",
+                        "net": "Qaddress[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[9]",
+                        "net": "Qaddress[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[10]",
+                        "net": "Qaddress[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[11]",
+                        "net": "Qaddress[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[12]",
+                        "net": "Qaddress[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[13]",
+                        "net": "Qaddress[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[14]",
+                        "net": "Qaddress[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[15]",
+                        "net": "Qaddress[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[16]",
+                        "net": "Qaddress[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[17]",
+                        "net": "Qaddress[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[18]",
+                        "net": "Qaddress[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[19]",
+                        "net": "Qaddress[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[20]",
+                        "net": "Qaddress[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe6[21]",
+                        "net": "Qaddress[21]",
                         "path": []
                     },
                     {
@@ -341,18 +454,123 @@
                         "path": []
                     },
                     {
-                        "name": "la0_probe8",
-                        "net": "Outbound",
+                        "name": "la0_probe8[0]",
+                        "net": "BDALf_OUT[0]",
                         "path": []
                     },
                     {
-                        "name": "la0_probe9",
-                        "net": "Qselected",
+                        "name": "la0_probe8[1]",
+                        "net": "BDALf_OUT[1]",
                         "path": []
                     },
                     {
-                        "name": "la0_probe10",
-                        "net": "DA_OE[0]",
+                        "name": "la0_probe8[2]",
+                        "net": "BDALf_OUT[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[3]",
+                        "net": "BDALf_OUT[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[4]",
+                        "net": "BDALf_OUT[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[5]",
+                        "net": "BDALf_OUT[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[6]",
+                        "net": "BDALf_OUT[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[7]",
+                        "net": "BDALf_OUT[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[8]",
+                        "net": "BDALf_OUT[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[9]",
+                        "net": "BDALf_OUT[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[10]",
+                        "net": "BDALf_OUT[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[11]",
+                        "net": "BDALf_OUT[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[12]",
+                        "net": "BDALf_OUT[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[13]",
+                        "net": "BDALf_OUT[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[14]",
+                        "net": "BDALf_OUT[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[15]",
+                        "net": "BDALf_OUT[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[16]",
+                        "net": "BDALf_OUT[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[17]",
+                        "net": "BDALf_OUT[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[18]",
+                        "net": "BDALf_OUT[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[19]",
+                        "net": "BDALf_OUT[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[20]",
+                        "net": "BDALf_OUT[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8[21]",
+                        "net": "BDALf_OUT[21]",
+                        "path": []
+                    },
+                    {
+                        "name": "la1_clk",
+                        "net": "n74",
+                        "path": []
+                    },
+                    {
+                        "name": "la1_probe0",
+                        "net": "LED",
                         "path": []
                     }
                 ]
@@ -367,7 +585,7 @@
     ],
     "session": {
         "wizard": {
-            "data_depth": 2048,
+            "data_depth": 512,
             "capture_control": true,
             "selected_nets": [
                 {
@@ -403,41 +621,7 @@
                     "path": []
                 },
                 {
-                    "name": "BBS7f",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BWTBTf",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BINITf",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BDALf_IN",
-                    "width": 22,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": [],
-                    "net_idx_left": 21,
-                    "net_idx_right": 0
-                },
-                {
-                    "name": "Outbound",
+                    "name": "BRPLYg",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",
@@ -453,9 +637,39 @@
                     "path": []
                 },
                 {
-                    "name": "DA_OE[0]",
-                    "width": 1,
+                    "name": "Qaddress",
+                    "width": 22,
                     "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "BDALf_IN",
+                    "width": 22,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "BDALf_OUT",
+                    "width": 22,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "LED",
+                    "width": 1,
+                    "clk_domain": "n74",
                     "selected_probe_type": "DATA AND TRIGGER",
                     "child": [],
                     "path": []
