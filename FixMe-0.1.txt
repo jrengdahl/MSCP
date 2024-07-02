@@ -1,4 +1,4 @@
-This document lists the fixes needed for rev 0.1 of the Qbus SSD board.
+This document lists the fixes needed to rev 0.1 of the Qbus SSD board.
 
 
 Change the oscillator from 8 MHz to 10 MHz. 10 MHz is the minimum the PLL can use for a reference clock. Until then, the
@@ -11,9 +11,10 @@ was driving CSI low. NWAIT is an FPGA output which floats at powerup, so the pul
 TEST_N, which currently has a pullup and no other use. 
 
 
-TEST_N is actually a GPIO which currently has no use or connection. It should be connected to an LED or something, as long as
-it is an output.
+TEST_N is actually a GPIO which currently has no use or connection. It should be connected to a H723 GPIO, as long as
+it is an output. It can be used as an interrupt handshake from the FPGA to the H723.
 
+Connect more GPIOs on the H723 to the test points on the FPGA.
 
 10K pulldowns are needed on the gates of all MOSFETS. Without the pulldown, at powerup, while the MCU or FPGA pins driving
 the gates are still floating, the gates will eventually float high and turn on the MOSFETS. For LED drivers this is simply

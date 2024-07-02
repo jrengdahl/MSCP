@@ -43,25 +43,37 @@ module qbus (
     output logic BREFg,
 
     // other
+    output logic FPGA_IRQ,          // interrupt from FPGA to H723
     output logic LED,
     output logic PLL_RSTN,
     output logic dummy
     );
 
-    parameter [21:0] QADDR = 22'o17772150;
+    parameter [21:0] QADDR_IR = 22'o17772150;
+    parameter [21:0] QADDR_SA = 22'o17772152;
     
     
-    logic [15:0] register[3:0];    // 16-bit register to store data
-    logic [23:0] Faddress;         // Latch for the FMC address
-    logic [21:0] Qaddress;         // Latch for the Qbus address
-    logic WriteCycle;
-    logic BBS7;
-    logic Qselected;
-    
-    assign Qselected = BBS7 && Qaddress[12:3] == QADDR[12:3];
-    assign LED = register[0][0];
+    logic [15:0] SA_Status;         // status read by PDP-11, written by H723
+    logic [15:0] SA_Address;        // address written by PDP-11, read by H723
+    logic IR_Read;                  // IR register has been read by PDP-11 (poll queue)
+    logic IR_Written;               // IR register has been written by PDP-11 (init)
+    logic SA_Read;                  // SA register has been read by PDP-11
+    logic SA_Written;               // SA register has been written by PDP-11
+    logic [23:0] Faddress;          // Latch for the FMC address
+    logic Q_IR_selected;            // latches whether the IR register is addressed by the Qbus
+    logic Q_SA_selected;            // latches whether the SA register is addressed by the Qbus
+    logic Qaddress0;                // latches the low bit of the Qbus address
+       
+    assign FPGA_IRQ = IR_Read || IR_Written || SA_Read || SA_Written;
+
+
+    assign LED = SA_Address[0];
     assign PLL_RSTN = 1;
-    
+   
+    logic  F_IR_write_selected;      // comb, IR is being written by H723
+    assign F_IR_write_selected = !NE1 && !NWE && Faddress[21:0] == QADDR_IR[21:0];
+
+ 
     assign BSYNCg = 0;
     assign BDINg  = 0;
     assign BDOUTg = 0;
@@ -77,78 +89,146 @@ module qbus (
     assign BREFg  = 0;
 
 
-    // Capture QBus address and related info at leading edge of BSYNC
-    always_ff @(negedge BSYNCf)
+    // Latch the FMC address on NL
+    always_ff @(posedge NL)
         begin
-        Qaddress <= ~BDALf_IN;
-        BBS7 <= ~BBS7f;
-        WriteCycle <= ~BWTBTf;
+        Faddress <= {A, DA_IN, ~NBL1};
         end
-            
 
+
+    // FMC write
+    always_ff @(posedge NWE)
+        begin
+        if (!NE1 && Faddress[21:1] == QADDR_SA[21:1])
+            begin
+            if (!NBL0) SA_Status[7:0]  <= DA_IN[7:0];   // Byte 0 write
+            if (!NBL1) SA_Status[15:8] <= DA_IN[15:8];  // Byte 1 write
+            end
+        end
+        
+    // FMC read
+    always_comb
+        begin
+        DA_OUT = 0;
+        DA_OE = 0;
+        
+        if (!NE1 && !NOE)
+            begin
+            if(Faddress[21:1] == QADDR_IR[21:1])
+                begin
+                DA_OUT = {12'b0, SA_Written, SA_Read, IR_Written, IR_Read};    // Drive the AD bus with register data
+                DA_OE = 16'hFFFF;
+                end
+            else if(Faddress[21:1] == QADDR_SA[21:1])
+                begin
+                DA_OUT = SA_Address;    // Drive the AD bus with register data
+                DA_OE = 16'hFFFF;
+                end
+            end
+        end
+
+    
+
+    // Capture QBus address and related info at leading edge of BSYNC
+    always_ff @(negedge BSYNCf or negedge BINITf)
+        begin
+        if(!BINITf)
+            begin
+            Q_IR_selected <= 0;
+            Q_SA_selected <= 0;
+            Qaddress0 <= 0;
+            end
+        else
+            begin
+            Q_IR_selected <= !BBS7f && ~BDALf_IN[12:1] == QADDR_IR[12:1];
+            Q_SA_selected <= !BBS7f && ~BDALf_IN[12:1] == QADDR_SA[12:1];
+            Qaddress0 <= ~BDALf_IN[0];
+            end
+        end
+
+
+
+    // QBus write
+    always_ff @(posedge BDOUTf or posedge F_IR_write_selected)
+        begin
+        if (F_IR_write_selected)
+            begin
+            IR_Written <= 0;
+            SA_Written <= 0;
+            end
+        else if (Q_IR_selected)
+            begin
+            IR_Written <= 1;
+            end
+        else if (Q_SA_selected)
+            begin
+            if (BWTBTf || Qaddress0 == 0) SA_Address[7:0]  <= ~BDALf_IN[7:0];      // Byte 0 write
+            if (BWTBTf || Qaddress0 == 1) SA_Address[15:8] <= ~BDALf_IN[15:8];  // Byte 1 write
+            SA_Written <= 1;
+            end
+        end
+
+    // QBus read, part
+    always_ff @(posedge BDINf or posedge F_IR_write_selected)
+        begin
+        if (F_IR_write_selected)
+            begin
+            IR_Read <= 0;
+            SA_Read <= 0;
+            end
+        else if (Q_IR_selected)
+            begin
+            IR_Read <= 1;
+            end
+        else if (Q_SA_selected)
+            begin
+            SA_Read <= 1;
+            end
+        end
+
+
+
+    // Qbus read operation, and write BRPLY
     always_comb
         begin
 
-        DA_OE = 16'h0000;
         BRPLYg = 0;
-        BDALf_OE = 22'h000000;                          // disable the FPGA bus drivers by default
+        BDALf_OUT = 22'h000000;
+        BDALf_OE  = 22'h000000;                         // disable the FPGA bus drivers by default
         Outbound = 0;                                   // disable the BDAL gate drivers by default
         
-        // FMC logic
-
-        // Latch the FMC address on NL low
-        if (!NL)
-            begin
-            Faddress = {A, DA_IN, ~NBL1};
-            end
-
-        // FMC read operation
-        if (!NE1 && !NOE)
-            begin
-            DA_OUT = register[Faddress[2:1]]; // Drive the AD bus with register data
-            DA_OE = 16'hFFFF;
-            end
-
-            
-       
-        // Qbus logic
-                
         // Qbus read operation
-        if (Qselected && !BDINf)
+        if (Q_IR_selected && !BDINf)
+            begin
+            BDALf_OE = 22'h3FFFFF;                      // enable the FPGA bus drivers to output the data
+            Outbound = 1;                               // enable the gate drivers
+            end
+        // Qbus read operation
+        else if (Q_SA_selected && !BDINf)
             begin
             BDALf_OUT[21:18] = 4'b0000;
             BDALf_OUT[17] = 0;                          // memory parity error enable
             BDALf_OUT[16] = 0;                          // memory parity error
-            BDALf_OUT[15:0] = register[Qaddress[2:1]];  // Drive the BDALf bus with register data
+            BDALf_OUT[15:0] = SA_Status;                // Drive the BDALf bus with register data
             BDALf_OE = 22'h3FFFFF;                      // enable the FPGA bus drivers to output the data
             Outbound = 1;                               // enable the gate drivers
-            BRPLYg = 1;                                 // assert the reply signal
             end
             
-        // Qbus write operation
-        if (Qselected && !BDOUTf)
+        // assert BRPLY as needed
+        if ((Q_IR_selected || Q_SA_selected) && (!BDINf || !BDOUTf))
             begin
             BRPLYg = 1;                                 // assert the reply signal
             end
 
         end          
 
+
+    
+    // do something silly with the clock to make sure it is not optimized away
+    // so we can use it for the logic analyzer
     always_ff @(posedge clock)
         begin
         dummy <= !dummy;
-
-        // FMC write operation
-        if (!NE1 && !NWE)
-            begin
-            if (!NBL0) register[Faddress[2:1]][7:0]  <= DA_IN[7:0];   // Byte 0 write
-            if (!NBL1) register[Faddress[2:1]][15:8] <= DA_IN[15:8];  // Byte 1 write
-            end
-            
-        if (Qselected && !BDOUTf)
-            begin
-            if (BWTBTf || Qaddress[0] == 0) register[Qaddress[2:1]][7:0]  <= ~BDALf_IN[7:0];      // Byte 0 write
-            if (BWTBTf || Qaddress[0] == 1) register[Qaddress[2:1]][15:8] <= ~BDALf_IN[15:8];  // Byte 1 write
-            end
         end
 
 
