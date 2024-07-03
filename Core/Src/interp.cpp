@@ -227,7 +227,6 @@ void interp()
             }
 
 
-#if 0
         //              //                              //
         HELP(  "i <pin> [<repeat>]              report inputs")
         else if(buf[0]=='i' && buf[1] == ' ')
@@ -251,8 +250,8 @@ void interp()
                 {
                 switch(i)
                     {
-                case 0:  value = HAL_GPIO_ReadPin(GPIONAME( SW1)); break;
-                default: value = HAL_GPIO_ReadPin(GPIONAME( SW1)); break;
+                case 0:  value = HAL_GPIO_ReadPin(GPIONAME( FPGA_IRQ)); break;
+                default: value = HAL_GPIO_ReadPin(GPIONAME( FPGA_IRQ)); break;
                     }
 
                 if(value != last)
@@ -265,7 +264,6 @@ void interp()
                 yield();
                 }
             }
-#endif
 
 
 //              //                              //
@@ -445,7 +443,9 @@ void interp()
              : "r"(addr)
              : );
 
-            printf("%04lx\n", value);                // print the result
+            skip(&p);
+            if(*p=='o')printf("%06o\n", (int)value);
+            else printf("%04lx\n", value);                // print the result
             }
 
 //              //                              //

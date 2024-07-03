@@ -2,16 +2,16 @@ module qbus (
     input logic clock,
     
     // FMC signals
-    input logic [15:0] DA_IN,   // Address/Data bus (bidirectional)
-    output logic [15:0] DA_OUT,  // Address/Data bus (bidirectional)
-    output logic [15:0] DA_OE,   // Address/Data bus (bidirectional)
-    input logic [6:0] A,        // Upper address bits [22:16]
-    input logic NL,             // Address latch enable
-    input logic NOE,            // Read enable (active low)
-    input logic NWE,            // Write enable (active low)
-    input logic NE1,            // Chip select (active low)
-    input logic NBL0,           // Byte enable 0 (active low)
-    input logic NBL1,           // Byte enable 1 (active low)
+    input logic [15:0] DA_IN,       // Address/Data bus (bidirectional)
+    output logic [15:0] DA_OUT,     // Address/Data bus (bidirectional)
+    output logic [15:0] DA_OE,      // Address/Data bus (bidirectional)
+    input logic [6:0] A,            // Upper address bits [22:16]
+    input logic NL,                 // Address latch enable
+    input logic NOE,                // Read enable (active low)
+    input logic NWE,                // Write enable (active low)
+    input logic NE1,                // Chip select (active low)
+    input logic NBL0,               // Byte enable 0 (active low)
+    input logic NBL1,               // Byte enable 1 (active low)
 
     // Qbus signals
     input logic [21:0] BDALf_IN,
@@ -92,11 +92,10 @@ module qbus (
     // Latch the FMC address on NL
     always_ff @(posedge NL)
         begin
-        Faddress <= {A, DA_IN, ~NBL1};
+        Faddress <= {A, DA_IN, !NBL1 && NBL0};
         end
 
-
-    // FMC write
+    // FMC write to SA register
     always_ff @(posedge NWE)
         begin
         if (!NE1 && Faddress[21:1] == QADDR_SA[21:1])
@@ -105,7 +104,7 @@ module qbus (
             if (!NBL1) SA_Status[15:8] <= DA_IN[15:8];  // Byte 1 write
             end
         end
-        
+
     // FMC read
     always_comb
         begin
@@ -146,8 +145,6 @@ module qbus (
             end
         end
 
-
-
     // QBus write
     always_ff @(posedge BDOUTf or posedge F_IR_write_selected)
         begin
@@ -162,13 +159,13 @@ module qbus (
             end
         else if (Q_SA_selected)
             begin
-            if (BWTBTf || Qaddress0 == 0) SA_Address[7:0]  <= ~BDALf_IN[7:0];      // Byte 0 write
+            if (BWTBTf || Qaddress0 == 0) SA_Address[7:0]  <= ~BDALf_IN[7:0];   // Byte 0 write
             if (BWTBTf || Qaddress0 == 1) SA_Address[15:8] <= ~BDALf_IN[15:8];  // Byte 1 write
             SA_Written <= 1;
             end
         end
 
-    // QBus read, part
+    // QBus read, clocked part
     always_ff @(posedge BDINf or posedge F_IR_write_selected)
         begin
         if (F_IR_write_selected)
@@ -186,9 +183,7 @@ module qbus (
             end
         end
 
-
-
-    // Qbus read operation, and write BRPLY
+    // Qbus read operation, and write BRPLY, combinatorial part
     always_comb
         begin
 

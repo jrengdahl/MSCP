@@ -54,14 +54,28 @@ uintptr_t gethex(const char **p)
     {
     uintptr_t x=0;
 
-    while(1)
+    if(**p != 'o')
         {
-        if('0'<=**p&&**p<='9')     x = (x<<4) + **p-'0';
-        else if('a'<=**p&&**p<='f')x = (x<<4) + **p-'a'+10;
-        else if('A'<=**p&&**p<='F')x = (x<<4) + **p-'A'+10;
-        else if( **p == '\''){}
-        else return x;
+        while(1)
+            {
+            if('0'<=**p&&**p<='9')     x = (x<<4) + **p-'0';
+            else if('a'<=**p&&**p<='f')x = (x<<4) + **p-'a'+10;
+            else if('A'<=**p&&**p<='F')x = (x<<4) + **p-'A'+10;
+            else if( **p == '\''){}
+            else return x;
+            (*p)++;
+            }
+        }
+    else
+        {
         (*p)++;
+        while(1)
+            {
+            if('0'<=**p&&**p<='7')     x = (x<<3) + **p-'0';
+            else if( **p == '\''){}
+            else return x;
+            (*p)++;
+            }
         }
     }
 

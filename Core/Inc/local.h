@@ -17,6 +17,8 @@ extern uint64_t getlong(const char **p);
 extern uintptr_t gethex(const char **p);
 extern void skip(const char **p);
 
+#define izdigit(p) (*p=='o' || ('0'<=*p&&*p<='9') || ('a'<=*p&&*p<='a') || ('A'<=*p&&*p<='A'))
+
 extern "C" void trigon();
 extern "C" void trigoff();
 

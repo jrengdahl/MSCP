@@ -3,7 +3,7 @@
         {
             "name": "la0",
             "type": "la",
-            "uuid": "dcd03ad5a87543b1b63e660c836b4ee0",
+            "uuid": "888404a3e84044188f0e86c8df82d6f5",
             "trigin_en": false,
             "trigout_en": false,
             "auto_inserted": true,
@@ -34,16 +34,6 @@
                 {
                     "name": "BRPLYg",
                     "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDALf_IN",
-                    "width": 22,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDALf_OUT",
-                    "width": 22,
                     "probe_type": 1
                 },
                 {
@@ -94,6 +84,26 @@
                 {
                     "name": "IR_Written",
                     "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NE1",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "Faddress",
+                    "width": 24,
+                    "probe_type": 1
+                },
+                {
+                    "name": "SA_Status",
+                    "width": 16,
+                    "probe_type": 1
+                },
+                {
+                    "name": "SA_Address",
+                    "width": 16,
                     "probe_type": 1
                 }
             ]
@@ -251,273 +261,338 @@
                         "path": []
                     },
                     {
-                        "name": "la0_probe5[0]",
-                        "net": "BDALf_IN[0]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[1]",
-                        "net": "BDALf_IN[1]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[2]",
-                        "net": "BDALf_IN[2]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[3]",
-                        "net": "BDALf_IN[3]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[4]",
-                        "net": "BDALf_IN[4]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[5]",
-                        "net": "BDALf_IN[5]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[6]",
-                        "net": "BDALf_IN[6]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[7]",
-                        "net": "BDALf_IN[7]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[8]",
-                        "net": "BDALf_IN[8]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[9]",
-                        "net": "BDALf_IN[9]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[10]",
-                        "net": "BDALf_IN[10]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[11]",
-                        "net": "BDALf_IN[11]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[12]",
-                        "net": "BDALf_IN[12]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[13]",
-                        "net": "BDALf_IN[13]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[14]",
-                        "net": "BDALf_IN[14]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[15]",
-                        "net": "BDALf_IN[15]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[16]",
-                        "net": "BDALf_IN[16]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[17]",
-                        "net": "BDALf_IN[17]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[18]",
-                        "net": "BDALf_IN[18]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[19]",
-                        "net": "BDALf_IN[19]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[20]",
-                        "net": "BDALf_IN[20]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5[21]",
-                        "net": "BDALf_IN[21]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[0]",
-                        "net": "BDALf_OUT[0]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[1]",
-                        "net": "BDALf_OUT[1]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[2]",
-                        "net": "BDALf_OUT[2]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[3]",
-                        "net": "BDALf_OUT[3]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[4]",
-                        "net": "BDALf_OUT[4]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[5]",
-                        "net": "BDALf_OUT[5]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[6]",
-                        "net": "BDALf_OUT[6]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[7]",
-                        "net": "BDALf_OUT[7]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[8]",
-                        "net": "BDALf_OUT[8]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[9]",
-                        "net": "BDALf_OUT[9]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[10]",
-                        "net": "BDALf_OUT[10]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[11]",
-                        "net": "BDALf_OUT[11]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[12]",
-                        "net": "BDALf_OUT[12]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[13]",
-                        "net": "BDALf_OUT[13]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[14]",
-                        "net": "BDALf_OUT[14]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[15]",
-                        "net": "BDALf_OUT[15]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[16]",
-                        "net": "BDALf_OUT[16]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[17]",
-                        "net": "BDALf_OUT[17]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[18]",
-                        "net": "BDALf_OUT[18]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[19]",
-                        "net": "BDALf_OUT[19]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[20]",
-                        "net": "BDALf_OUT[20]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6[21]",
-                        "net": "BDALf_OUT[21]",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe7",
+                        "name": "la0_probe5",
                         "net": "SA_Read",
                         "path": []
                     },
                     {
-                        "name": "la0_probe8",
+                        "name": "la0_probe6",
                         "net": "Outbound",
                         "path": []
                     },
                     {
-                        "name": "la0_probe9",
+                        "name": "la0_probe7",
                         "net": "F_IR_write_selected",
                         "path": []
                     },
                     {
-                        "name": "la0_probe10",
+                        "name": "la0_probe8",
                         "net": "IR_Read",
                         "path": []
                     },
                     {
-                        "name": "la0_probe11",
+                        "name": "la0_probe9",
                         "net": "SA_Written",
                         "path": []
                     },
                     {
-                        "name": "la0_probe12",
+                        "name": "la0_probe10",
                         "net": "FPGA_IRQ",
                         "path": []
                     },
                     {
-                        "name": "la0_probe13",
+                        "name": "la0_probe11",
                         "net": "Q_SA_selected",
                         "path": []
                     },
                     {
-                        "name": "la0_probe14",
+                        "name": "la0_probe12",
                         "net": "Q_IR_selected",
                         "path": []
                     },
                     {
-                        "name": "la0_probe15",
+                        "name": "la0_probe13",
                         "net": "Qaddress0",
                         "path": []
                     },
                     {
-                        "name": "la0_probe16",
+                        "name": "la0_probe14",
                         "net": "IR_Written",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15",
+                        "net": "NE1",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[0]",
+                        "net": "Faddress[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[1]",
+                        "net": "Faddress[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[2]",
+                        "net": "Faddress[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[3]",
+                        "net": "Faddress[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[4]",
+                        "net": "Faddress[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[5]",
+                        "net": "Faddress[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[6]",
+                        "net": "Faddress[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[7]",
+                        "net": "Faddress[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[8]",
+                        "net": "Faddress[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[9]",
+                        "net": "Faddress[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[10]",
+                        "net": "Faddress[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[11]",
+                        "net": "Faddress[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[12]",
+                        "net": "Faddress[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[13]",
+                        "net": "Faddress[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[14]",
+                        "net": "Faddress[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[15]",
+                        "net": "Faddress[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[16]",
+                        "net": "Faddress[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[17]",
+                        "net": "Faddress[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[18]",
+                        "net": "Faddress[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[19]",
+                        "net": "Faddress[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[20]",
+                        "net": "Faddress[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[21]",
+                        "net": "Faddress[21]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[22]",
+                        "net": "Faddress[22]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[23]",
+                        "net": "Faddress[23]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[0]",
+                        "net": "SA_Status[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[1]",
+                        "net": "SA_Status[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[2]",
+                        "net": "SA_Status[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[3]",
+                        "net": "SA_Status[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[4]",
+                        "net": "SA_Status[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[5]",
+                        "net": "SA_Status[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[6]",
+                        "net": "SA_Status[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[7]",
+                        "net": "SA_Status[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[8]",
+                        "net": "SA_Status[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[9]",
+                        "net": "SA_Status[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[10]",
+                        "net": "SA_Status[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[11]",
+                        "net": "SA_Status[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[12]",
+                        "net": "SA_Status[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[13]",
+                        "net": "SA_Status[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[14]",
+                        "net": "SA_Status[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[15]",
+                        "net": "SA_Status[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[0]",
+                        "net": "SA_Address[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[1]",
+                        "net": "SA_Address[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[2]",
+                        "net": "SA_Address[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[3]",
+                        "net": "SA_Address[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[4]",
+                        "net": "SA_Address[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[5]",
+                        "net": "SA_Address[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[6]",
+                        "net": "SA_Address[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[7]",
+                        "net": "SA_Address[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[8]",
+                        "net": "SA_Address[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[9]",
+                        "net": "SA_Address[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[10]",
+                        "net": "SA_Address[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[11]",
+                        "net": "SA_Address[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[12]",
+                        "net": "SA_Address[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[13]",
+                        "net": "SA_Address[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[14]",
+                        "net": "SA_Address[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18[15]",
+                        "net": "SA_Address[15]",
                         "path": []
                     }
                 ]
@@ -574,26 +649,6 @@
                     "selected_probe_type": "DATA AND TRIGGER",
                     "child": [],
                     "path": []
-                },
-                {
-                    "name": "BDALf_IN",
-                    "width": 22,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": [],
-                    "net_idx_left": 21,
-                    "net_idx_right": 0
-                },
-                {
-                    "name": "BDALf_OUT",
-                    "width": 22,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": [],
-                    "net_idx_left": 21,
-                    "net_idx_right": 0
                 },
                 {
                     "name": "SA_Read",
@@ -674,6 +729,44 @@
                     "selected_probe_type": "DATA AND TRIGGER",
                     "child": [],
                     "path": []
+                },
+                {
+                    "name": "NE1",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "Faddress",
+                    "width": 24,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 23,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "SA_Status",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "SA_Address",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
                 }
             ],
             "top_module": "qbus",

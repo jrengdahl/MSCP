@@ -59,12 +59,18 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define CRESET_N_Pin GPIO_PIN_0
 #define CRESET_N_GPIO_Port GPIOA
+#define PA3_Pin GPIO_PIN_3
+#define PA3_GPIO_Port GPIOA
+#define PA4_Pin GPIO_PIN_4
+#define PA4_GPIO_Port GPIOA
 #define LED2_Pin GPIO_PIN_9
 #define LED2_GPIO_Port GPIOC
 #define LED1_Pin GPIO_PIN_10
 #define LED1_GPIO_Port GPIOC
 #define LED0_Pin GPIO_PIN_11
 #define LED0_GPIO_Port GPIOC
+#define FPGA_IRQ_Pin GPIO_PIN_3
+#define FPGA_IRQ_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
 

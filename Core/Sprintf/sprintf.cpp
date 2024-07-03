@@ -199,6 +199,12 @@ int vsnprintf(char *buf, size_t size, const char *format, va_list args )
                 pc += printi (&out, bufend, value, 10, 1, width, pad, 'a');
                 continue;
             }
+            if ( *format == 'o' ) {
+                if(longflag)value = va_arg( args, long );
+                else        value = va_arg( args, int ) & 0xFFFFFFFF;
+                pc += printi (&out, bufend, value, 8, 0, width, pad, 'a');
+                continue;
+            }
             if ( *format == 'x' ) {
                 if(longflag)value = va_arg( args, long );
                 else        value = va_arg( args, int ) & 0xFFFFFFFF;
