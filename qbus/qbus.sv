@@ -55,10 +55,17 @@ module qbus (
     
     logic [15:0] SA_Status;         // status read by PDP-11, written by H723
     logic [15:0] SA_Address;        // address written by PDP-11, read by H723
+
     logic IR_Read;                  // IR register has been read by PDP-11 (poll queue)
     logic IR_Written;               // IR register has been written by PDP-11 (init)
     logic SA_Read;                  // SA register has been read by PDP-11
     logic SA_Written;               // SA register has been written by PDP-11
+
+    logic IR_ReadR;                 // latched version of the above for read-and-clear
+    logic IR_WrittenR;              //
+    logic SA_ReadR;                 //
+    logic SA_WrittenR;              //
+
     logic [23:0] Faddress;          // Latch for the FMC address
     logic Q_IR_selected;            // latches whether the IR register is addressed by the Qbus
     logic Q_SA_selected;            // latches whether the SA register is addressed by the Qbus
@@ -70,8 +77,8 @@ module qbus (
     assign LED = SA_Address[0];
     assign PLL_RSTN = 1;
    
-    logic  F_IR_write_selected;      // comb, IR is being written by H723
-    assign F_IR_write_selected = !NE1 && !NWE && Faddress[21:0] == QADDR_IR[21:0];
+    logic  F_IR_read_selected;      // comb, IR is being read by H723
+    assign F_IR_read_selected = !NE1 && !NOE && Faddress[21:0] == QADDR_IR[21:0];
 
  
     assign BSYNCg = 0;
@@ -106,6 +113,15 @@ module qbus (
         end
 
     // FMC read
+    
+    always_ff @(posedge NL) // latch the status bits at the beginning of any cycle
+        begin
+        IR_ReadR <= IR_Read;
+        IR_WrittenR <= IR_Written;
+        SA_ReadR <= SA_Read;
+        SA_WrittenR <= SA_Written;
+        end
+    
     always_comb
         begin
         DA_OUT = 0;
@@ -115,7 +131,7 @@ module qbus (
             begin
             if(Faddress[21:1] == QADDR_IR[21:1])
                 begin
-                DA_OUT = {12'b0, SA_Written, SA_Read, IR_Written, IR_Read};    // Drive the AD bus with register data
+                DA_OUT = {12'b0, SA_WrittenR, SA_ReadR, IR_WrittenR, IR_ReadR};    // Drive the AD bus with register data
                 DA_OE = 16'hFFFF;
                 end
             else if(Faddress[21:1] == QADDR_SA[21:1])
@@ -126,7 +142,7 @@ module qbus (
             end
         end
 
-    
+
 
     // Capture QBus address and related info at leading edge of BSYNC
     always_ff @(negedge BSYNCf or negedge BINITf)
@@ -146,9 +162,9 @@ module qbus (
         end
 
     // QBus write
-    always_ff @(posedge BDOUTf or posedge F_IR_write_selected)
+    always_ff @(posedge BDOUTf or posedge F_IR_read_selected)
         begin
-        if (F_IR_write_selected)
+        if (F_IR_read_selected)
             begin
             IR_Written <= 0;
             SA_Written <= 0;
@@ -166,9 +182,9 @@ module qbus (
         end
 
     // QBus read, clocked part
-    always_ff @(posedge BDINf or posedge F_IR_write_selected)
+    always_ff @(posedge BDINf or posedge F_IR_read_selected)
         begin
-        if (F_IR_write_selected)
+        if (F_IR_read_selected)
             begin
             IR_Read <= 0;
             SA_Read <= 0;
