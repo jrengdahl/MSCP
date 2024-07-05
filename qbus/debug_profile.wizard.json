@@ -3,7 +3,7 @@
         {
             "name": "la0",
             "type": "la",
-            "uuid": "8a98454698964097b3ffdf8318e842ea",
+            "uuid": "fb3474e5ae4a4993a857f4b2d3cfcb23",
             "trigin_en": false,
             "trigout_en": false,
             "auto_inserted": true,
@@ -28,11 +28,6 @@
                 },
                 {
                     "name": "BRPLYf",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BRPLYg",
                     "width": 1,
                     "probe_type": 1
                 },
@@ -82,7 +77,82 @@
                     "probe_type": 1
                 },
                 {
+                    "name": "BDMRg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDMGIf",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDMGOg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DMA_grant",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BSACKg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BSACKL_Asserted",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BSACKL_AssertedR",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BSYNCg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDINg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDOUTg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
                     "name": "NE1",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NL",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NOE",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NWE",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NBL0",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "NBL1",
                     "width": 1,
                     "probe_type": 1
                 }
@@ -237,57 +307,127 @@
                     },
                     {
                         "name": "la0_probe4",
-                        "net": "BRPLYg",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5",
                         "net": "SA_Read",
                         "path": []
                     },
                     {
-                        "name": "la0_probe6",
+                        "name": "la0_probe5",
                         "net": "Outbound",
                         "path": []
                     },
                     {
-                        "name": "la0_probe7",
+                        "name": "la0_probe6",
                         "net": "IR_Read",
                         "path": []
                     },
                     {
-                        "name": "la0_probe8",
+                        "name": "la0_probe7",
                         "net": "SA_Written",
                         "path": []
                     },
                     {
-                        "name": "la0_probe9",
+                        "name": "la0_probe8",
                         "net": "FPGA_IRQ",
                         "path": []
                     },
                     {
-                        "name": "la0_probe10",
+                        "name": "la0_probe9",
                         "net": "Q_SA_selected",
                         "path": []
                     },
                     {
-                        "name": "la0_probe11",
+                        "name": "la0_probe10",
                         "net": "Q_IR_selected",
                         "path": []
                     },
                     {
-                        "name": "la0_probe12",
+                        "name": "la0_probe11",
                         "net": "Qaddress0",
                         "path": []
                     },
                     {
-                        "name": "la0_probe13",
+                        "name": "la0_probe12",
                         "net": "IR_Written",
                         "path": []
                     },
                     {
+                        "name": "la0_probe13",
+                        "net": "BDMRg",
+                        "path": []
+                    },
+                    {
                         "name": "la0_probe14",
+                        "net": "BDMGIf",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15",
+                        "net": "BDMGOg",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16",
+                        "net": "DMA_grant",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17",
+                        "net": "BSACKg",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18",
+                        "net": "BSACKL_Asserted",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe19",
+                        "net": "BSACKL_AssertedR",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe20",
+                        "net": "BSYNCg",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe21",
+                        "net": "BDINg",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe22",
+                        "net": "BDOUTg",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe23",
                         "net": "NE1",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe24",
+                        "net": "NL",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe25",
+                        "net": "NOE",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe26",
+                        "net": "NWE",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe27",
+                        "net": "NBL0",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe28",
+                        "net": "NBL1",
                         "path": []
                     }
                 ]
@@ -331,14 +471,6 @@
                 },
                 {
                     "name": "BRPLYf",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BRPLYg",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",
@@ -418,7 +550,127 @@
                     "path": []
                 },
                 {
+                    "name": "BDMRg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDMGIf",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDMGOg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "DMA_grant",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BSACKg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BSACKL_Asserted",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BSACKL_AssertedR",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BSYNCg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDINg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDOUTg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
                     "name": "NE1",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NL",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NOE",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NWE",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NBL0",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "NBL1",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",
