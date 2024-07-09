@@ -3,3 +3,7 @@ create_clock -name clock -period 100 [get_nets clock]
 
 # JTAG clock at 6 MHz
 create_clock -name jtag_inst1_TCK -period 166.67 [get_ports jtag_inst1_TCK]
+
+# Declare false paths between the JTAG clock and the system clock
+set_false_path -from [get_clocks jtag_inst1_TCK] -to [get_clocks clock]
+set_false_path -from [get_clocks clock] -to [get_clocks jtag_inst1_TCK]

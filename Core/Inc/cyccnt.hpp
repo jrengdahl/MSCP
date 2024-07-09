@@ -37,6 +37,16 @@ static inline unsigned Elapsed()
     return delta;
     }
 
+static inline void TimeStamp()
+    {
+    LastTimeStamp = xCYCCNT;
+    }
+
+static inline unsigned NsSince()
+    {
+    return (xCYCCNT - LastTimeStamp)*1000/CPU_FREQ_MHZ;
+    }
+
 static inline void Pause()
     {
     LastTimeStamp -= xCYCCNT;
@@ -46,5 +56,19 @@ static inline void Resume()
     {
     LastTimeStamp += xCYCCNT;
     }
+
+
+static inline unsigned Ticks()
+    {
+    return xCYCCNT;
+    }
+
+static inline unsigned TicksPer(unsigned ns)
+    {
+    return (ns*CPU_FREQ_MHZ)/1000;
+    }
+
+
+
 
 #endif //CYCCNT_HPP

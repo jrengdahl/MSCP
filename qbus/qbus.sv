@@ -82,18 +82,18 @@ module qbus (
     logic IR_Written;               // IR register has been written by PDP-11 (init)
     logic SA_Read;                  // SA register has been read by PDP-11
     logic SA_Written;               // SA register has been written by PDP-11
-    logic BRPLYL_Asserted;          // BRPLYL has been asserted
-    logic BRPLYL_Deasserted;        // BRPLY has been deasserted
-    logic BSACKL_Asserted;          // BSACKL has been asserted
+    logic BRPLY_Asserted;           // BRPLYL has been asserted
+    logic BRPLY_Deasserted;         // BRPLY has been deasserted
+    logic BSACK_Asserted;           // BSACKL has been asserted
     
     // latched version of the above for read-and-clear
     logic IR_ReadR;                 //
     logic IR_WrittenR;              //
     logic SA_ReadR;                 //
     logic SA_WrittenR;              //
-    logic BRPLYL_AssertedR;         //
-    logic BRPLYL_DeassertedR;       //
-    logic BSACKL_AssertedR;         //
+    logic BRPLY_AssertedR;          //
+    logic BRPLY_DeassertedR;        //
+    logic BSACK_AssertedR;          //
 
     // Both the Qbus and FMC bus have multiplexed address/data
     // these are the addresses latched during the address phase of a bbus cycle for both busses
@@ -165,9 +165,9 @@ module qbus (
         IR_WrittenR <= IR_Written;
         SA_ReadR <= SA_Read;
         SA_WrittenR <= SA_Written;
-        BRPLYL_AssertedR <= BRPLYL_Asserted;
-        BRPLYL_DeassertedR <= BRPLYL_Deasserted;
-        BSACKL_AssertedR <= BSACKL_Asserted;
+        BRPLY_AssertedR <= BRPLY_Asserted;
+        BRPLY_DeassertedR <= BRPLY_Deasserted;
+        BSACK_AssertedR <= BSACK_Asserted;
         end
     
     always_comb
@@ -182,9 +182,9 @@ module qbus (
             if(Faddress[21:1] == FADDR_IR[21:1])
                 begin
                 DA_OUT = {8'b0,     // Drive the AD bus with register data
-                        BSACKL_AssertedR,
-                        BRPLYL_DeassertedR,
-                        BRPLYL_AssertedR,
+                        BSACK_AssertedR,
+                        BRPLY_DeassertedR,
+                        BRPLY_AssertedR,
                         ~BRPLYf,
                         SA_WrittenR,
                         SA_ReadR, 
@@ -282,7 +282,9 @@ module qbus (
 
     wire Q_Addr_enable = Q_Ctl[10];
     
-    // Qbus read as slave, and DMA write as master
+    // This section handles data transmitted on qbus by this module
+    // whether the module as a slave is read by the PDP-11,
+    // or the module as a Qbus master intiates a DMA transaction to the PDP-11 system memory
     always_comb
         begin
 
@@ -290,14 +292,18 @@ module qbus (
         BDALf_OE  = 22'h000000;                         // disable the FPGA bus drivers by default
         Outbound = 0;                                   // disable the BDAL gate drivers by default
         
+        // transactions performed as bus master
+        // The timing of master transactions is controlled by the H723 by writing to the Q-Ctl register
         if (BSACKg)
             begin
+            // output the address during the address portion of any cycle
             if (Q_Addr_enable)
                 begin
                 BDALf_OUT = Q_Addr;
                 BDALf_OE = 22'h3FFFFF;                      // enable the FPGA bus drivers to output the data
                 Outbound = 1;                               // enable the gate drivers
                 end
+            // output the data during the data portion of a write cycle
             else if(BDOUTg)
                 begin
                 BDALf_OUT[21:18] = 4'b0000;
@@ -309,13 +315,15 @@ module qbus (
                 end
             end
 
-        // Qbus read operation
+        // transactions performed as bus slave
+        // Qbus read of IR register
         else if (Q_IR_selected && !BDINf)
             begin
             BDALf_OE = 22'h3FFFFF;                      // enable the FPGA bus drivers to output the data
             Outbound = 1;                               // enable the gate drivers
             end
-        // Qbus read operation
+            
+        // Qbus read of SA register
         else if (Q_SA_selected && !BDINf)
             begin
             BDALf_OUT[21:18] = 4'b0000;
@@ -330,7 +338,7 @@ module qbus (
 
         
     // assert BRPLY as needed
-    assign BRPLYg = (Q_IR_selected || Q_SA_selected) && (!BDINf || !BDOUTf);
+    assign BRPLYg = !BSACKg && (Q_IR_selected || Q_SA_selected) && (!BDINf || !BDOUTf);
 
 
     
@@ -357,15 +365,15 @@ module qbus (
     // Detect assertion of BRPLYL
     always_ff @(negedge BRPLYf or posedge F_IR_read_enable)
         begin
-        if (F_IR_read_enable)   BRPLYL_Asserted <= 0;
-        else                    BRPLYL_Asserted <= 1;
+        if (F_IR_read_enable)   BRPLY_Asserted <= 0;
+        else                    BRPLY_Asserted <= 1;
         end
 
     // Detect deassertion of BRPLYL
     always_ff @(posedge BRPLYf or posedge F_IR_read_enable)
         begin
-        if (F_IR_read_enable)   BRPLYL_Deasserted <= 0;
-        else                    BRPLYL_Deasserted <= 1;
+        if (F_IR_read_enable)   BRPLY_Deasserted <= 0;
+        else                    BRPLY_Deasserted <= 1;
         end
 
         
@@ -397,8 +405,8 @@ module qbus (
     // Detect assertion of BSACKL
     always_ff @(posedge BSACKg or posedge F_IR_read_enable)
         begin
-        if (F_IR_read_enable)   BSACKL_Asserted <= 0;
-        else                    BSACKL_Asserted <= 1;
+        if (F_IR_read_enable)   BSACK_Asserted <= 0;
+        else                    BSACK_Asserted <= 1;
         end
 
 
