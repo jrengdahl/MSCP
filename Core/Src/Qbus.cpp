@@ -1,24 +1,24 @@
-#include "context.hpp"
 #include <stdint.h>
 #include <stdio.h>
-#include <string.h>
-#include <ctype.h>
 #include "cmsis.h"
 #include "local.h"
 #include "bogodelay.hpp"
 #include "cyccnt.hpp"
 #include "main.h"
-#include "omp.h"
-#include "tim.h"
+#include "Qbus.hpp"
 
-#define FMC_WRITE_TIME 60
-#define Q_ADDR_SETUP 150
-#define Q_ADDR_HOLD 100
-#define Q_DATA_SETUP 150
-#define Q_DATA_HOLD 100
-#define Q_BDOUT_HOLD 150
-#define Q_SYNC_HOLD 100
-#define Q_TURN 200
+#define FMC_WRITE_TIME 60                       // minimum FMC write cycle time
+
+#define Q_ADDR_SETUP 150                        // addresss setup before BSYNC asserted
+#define Q_ADDR_HOLD 100                         // address hold after BSYNC asserted
+#define Q_DATA_SETUP 100                        // data setup before BDOUT asserted on write transaction
+#define Q_BDOUT_HOLD 150                        // BDOUT hold after receipt of BREPLY
+#define Q_DATA_HOLD 100                         // data hold after BDOUT deasserted
+#define Q_SYNC_HOLD 175                         // BSYNC hold after BDOUT deasserted
+#define Q_TURN 300                              // turnaround from BRPLY deasserted to next BSYNC asserted
+#define Q_RDATA_SETUP 200                       // after BRPLY asserted, read data setup before taking data sample and deasserting BDIN
+#define Q_DMA_TURN 250                          // delay from BSACK asserted to BSYNC asserted by DMA master
+#define Q_DMA_HOLDOFF 4000                      // min delay from BSACK deasserted to next assertion of BDMR
 
 
 struct Q_Sts
@@ -59,14 +59,23 @@ struct Q_Ctl
         };
 
     __IGNORE_WARNING("-Weffc++");                       // suppress warning: 'operator=' should return a reference to '*this' [-Weffc++]
+
+    inline void operator=(const Q_Ctl& other)
+        {
+        value = other.value; // Directly assign the 16-bit value
+        }
+
     inline void operator=(const Q_Ctl& other) volatile
         {
         value = other.value; // Directly assign the 16-bit value
         }
+
     __UNIGNORE_WARNING("-Weffc++");
+
     };
 
 
+// define addresses of registers in the FPGA
 #define QBASE 0x60000000
 #define FADDR_ST        (*(Q_Sts volatile *)(QBASE + 0))
 #define FADDR_SA        (*(uint16_t volatile *)(QBASE + 2))
@@ -77,69 +86,121 @@ struct Q_Ctl
 #define FADDR_DATA_IN   (*(uint16_t volatile *)(QBASE + 12))
 
 
+static Q_Ctl Ctl = {};                                      // CTL struct
 static unsigned stamp2 = 0;                                 // reference time stamp for Qbus turnaround (BSYNC-to-BSYNC delay)
+static unsigned Target = 0;
+
+#define DELAYFOR(time) for(unsigned stamp = Ticks(); Ticks()-stamp < TicksPer(time);)
+#define DELAYFOR2(time) for(; Ticks()-stamp2 < TicksPer(time);)
+#define DELAYUNTIL(time) while(Ticks()-Target <0)
+
+#define ASSERT(signal)    do {Ctl.signal = 1; FADDR_CT = Ctl;}while(false)
+#define DEASSERT(signal)  do {Ctl.signal = 0; FADDR_CT = Ctl;}while(false)
+
+#define WAITFOR(signal) while(!FADDR_ST.signal)
 
 
-void write(uint32_t addr, uint16_t data)
+void QDMAbegin()
     {
-    Q_Ctl Ctl = {};                                         // init the CTL struct
-    unsigned stamp;                                         // reference time stamp for Qbus timing
+    DELAYUNTIL(Target);                                     // wait until at least 4 usec since lst DMA
+    ASSERT(BDMR);
+    WAITFOR(BSACK_Asserted);
+    DEASSERT(BDMR);
+    Target = Ticks()+ TicksPer(Q_DMA_TURN);                 // set turnaround from BSACK to BSYNC 250 ns
+    }
+
+void QDMAend()
+    {
+    ASSERT(DMA_done);                                       // this turns off BSACK
+    Target = Ticks() + TicksPer(Q_DMA_HOLDOFF);             // must wait at least 4 usec before requesting DMA again
+    }
+
+
+void Qaddr(uint32_t addr, int write, int byte)
+    {
+    DELAYUNTIL(Target);                                     // BSYNC turnaround
 
     FADDR_LO = addr&0xFFFF;                                 // output the address
     FADDR_HI = addr>>16;
-
     Ctl.BBS7 = (addr&017770000) == 017770000;               // output the other address-related signals, and enable the address
-    Ctl.BWTBT = 1;
+    Ctl.BWTBT = write;
     Ctl.Q_Addr_enable = 1;
     FADDR_CT = Ctl;
 
-    stamp = Ticks();                                        // wait the address setup time
-    while(Ticks()-stamp < TicksPer(Q_ADDR_SETUP));
+    DELAYFOR(Q_ADDR_SETUP);                                 // address setup 150 ns
+    ASSERT(BSYNC);
+    DELAYFOR(Q_ADDR_HOLD);                                  // address hold 100 ns
 
-    Ctl.BSYNC = 1;                                          // assert BSYMC
+    Ctl.BBS7 = 0;                                           // deassert the address and related signals
+    Ctl.BWTBT = byte;
+    Ctl.Q_Addr_enable = 0;
     FADDR_CT = Ctl;
+    }
 
-    while(Ticks()-stamp < TicksPer(Q_ADDR_SETUP + Q_ADDR_HOLD));    // wait the address hold time
 
+uint16_t Qread()
+    {
+    uint16_t data;
+
+    if(FADDR_ST.BRPLY)                                      // make sure BRPLY is deasserted
+        {
+        printf("error: BRPLY should not be asserted at beginning of read\n");
+        return 0;
+        }
+
+    ASSERT(BDIN);
+    WAITFOR(BRPLY_Asserted);
+    DELAYFOR(Q_RDATA_SETUP);                                // data setup after BRPLY 200 ns
+    data = FADDR_DATA_IN;                                   // read the data
+    DEASSERT(BDIN);
+    WAITFOR(BRPLY_Deasserted);
+    Target = Ticks() + TicksPer(Q_TURN);                    // capture timestamp for BRPLY off to  next BSYNC on turnaround 300
+    DEASSERT(BSYNC);
+
+    return data;
+    }
+
+
+void Qwrite(uint16_t data)
+    {
     if(FADDR_ST.BRPLY)                                      // make sure BRPLY is deasserted
         {
         printf("error: BRPLY should not be asserted at beginning of write\n");
         return;
         }
 
-    Ctl.BBS7 = 0;                                           // deassert the address and related signals
-    Ctl.BWTBT = 0;
-    Ctl.Q_Addr_enable = 0;
-    FADDR_CT = Ctl;
-
     FADDR_DATA_OUT = data;                                  // output the data
-    Ctl.Q_Data_enable = 0;
-    FADDR_CT = Ctl;
-
-    stamp = Ticks();
-    while(Ticks()-stamp < TicksPer(Q_DATA_SETUP));          // wait the data setup time
-
-    Ctl.BDOUT = 1;                                          // asseret BDOUT
-    FADDR_CT = Ctl;
-
-    while(!FADDR_ST.BRPLY_Asserted);                        // wait for BRPLY
-
-    stamp = Ticks();
-    while(Ticks()-stamp < TicksPer(Q_DATA_SETUP));          // wait BDOUT hold time
-
-    Ctl.BDOUT = 0;                                          // deassert BDOUT
-    FADDR_CT = Ctl;
+    ASSERT(Q_Data_enable);
+    DELAYFOR(Q_DATA_SETUP);                                 // data setup 100 ns
+    ASSERT(BDOUT);
+    WAITFOR(BRPLY_Asserted);
+    DELAYFOR(Q_BDOUT_HOLD);                                 // BDOUT hold after BRPLY 150 ns
+    DEASSERT(BDOUT);
     stamp2 = Ticks();
+    DELAYFOR2(Q_DATA_HOLD);                                 // data hold after BDOUT off 100 ns
+    DEASSERT(Q_Data_enable);
+    WAITFOR(BRPLY_Deasserted);
+    Target = Ticks() + TicksPer(Q_TURN);                    // capture timestamp for BRPLY-to-BSYNC turnaround 300
+    DELAYFOR2(Q_SYNC_HOLD);                                 // sync hold after BDOUT off 175 ns
+    DEASSERT(BSYNC);
+    }
 
-    stamp = Ticks();
-    while(Ticks()-stamp < TicksPer(Q_DATA_HOLD));           // wait the data hold time
 
-    while(!FADDR_ST.BRPLY_Deasserted);                      // wait for BRPLY to be deasserted
+void QWriteWord(uint32_t addr, uint16_t data)
+    {
+    QDMAbegin();
+    Qaddr(addr, 1, 0);
+    Qwrite(data);
+    QDMAend();
+    }
 
-    while(Ticks()-stamp < TicksPer(Q_SYNC_HOLD));           // wait for BSYNC hold time referenced to BDOUT deasserted
+uint16_t QReadWord(uint32_t addr)
+    {
+    uint16_t data;
 
-    Ctl.BSYNC = 0;                                          // deassert BSYNC
-    FADDR_CT = Ctl;
-
-    stamp2 = Ticks();                                       // capture timestamp for BSYNC-to-BSYNC delay
+    QDMAbegin();
+    Qaddr(addr, 0);
+    data = Qread();
+    QDMAend();
+    return data;
     }

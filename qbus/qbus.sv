@@ -281,6 +281,7 @@ module qbus (
 
 
     wire Q_Addr_enable = Q_Ctl[10];
+    wire Q_Data_enable = Q_Ctl[11];
     
     // This section handles data transmitted on qbus by this module
     // whether the module as a slave is read by the PDP-11,
@@ -304,7 +305,7 @@ module qbus (
                 Outbound = 1;                               // enable the gate drivers
                 end
             // output the data during the data portion of a write cycle
-            else if(BDOUTg)
+            else if(Q_Data_Enable)
                 begin
                 BDALf_OUT[21:18] = 4'b0000;
                 BDALf_OUT[17] = 0;                          // memory parity error enable

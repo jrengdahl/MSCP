@@ -26,6 +26,7 @@
 #include "QSPI.h"
 #include "diskio.h"
 #include "ff.h"
+#include "Qbus.hpp"
 
 
 
@@ -1040,6 +1041,34 @@ void interp()
                 }
             }
 
+
+
+//              //                              //
+        HELP(  "q <cmd> <args>                  Qbus menu")
+        else if(buf[0]=='q' && buf[1]==' ')
+            {
+            if(p[0] == 'r' && p[1] == ' ')
+                {
+                skip(&p);
+
+                uint32_t addr = gethex(&p);            // get the address
+                uint16_t value;
+
+                value = QReadWord(addr);
+
+                skip(&p);
+                if(*p=='o')printf("%06o\n", (int)value);
+                else printf("%04x\n", value);                // print the result
+                }
+            else if(p[0] == 'w' && p[1]=='w')
+                {
+                uint32_t value = gethex(&p);
+                skip(&p);
+                uint32_t addr = gethex(&p);            // get the address
+
+                QWriteWord(addr, value);
+                }
+            }
 
         // print the help screen
         else if(buf[0]=='?')
