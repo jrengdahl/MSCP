@@ -45,3 +45,6 @@ Perhaps change the second row of LEDs, or get rid of them.
 
 
 See if there is a way to have both the H723 and the FPGA connected to the SPI-NOR.
+
+
+Enable the H723 to assert INITL on the backplane.

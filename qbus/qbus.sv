@@ -1,3 +1,46 @@
+module DFFR (
+    input logic clk,     // Clock input
+    input logic reset,   // Asynchronous reset input, active low
+    input logic D,       // Data input
+    output logic Q       // Data output
+);
+
+    always_ff @(posedge clk or posedge reset)
+        begin
+        if (reset)
+            begin
+            Q <= 1'b0;   // Asynchronously reset Q to 0
+            end
+        else
+            begin
+            Q <= D;      // On clock edge, assign D to Q
+            end
+        end
+
+endmodule
+
+module SRFF (
+    input logic set,     // Asynchronous set input, high-true
+    input logic reset,   // Asynchronous reset input, high-true
+    output logic Q       // Data output
+);
+
+    always_comb
+        begin
+        if (reset)
+            begin
+            Q = 1'b0;   // Asynchronously reset Q to 0
+            end
+        else if (set)
+            begin
+            Q = 1'b1;   // Asynchronously set Q to 1
+            end
+        end
+
+endmodule
+
+
+
 module qbus (
     input logic clock,
     
@@ -39,7 +82,7 @@ module qbus (
     output logic BIRQ6g,
     output logic BIAKOg,
     output logic BDMRg,
-    output logic BSACKg,
+    output wire BSACKg,
     output logic BDMGOg,
     output logic BREFg,
 
@@ -84,7 +127,6 @@ module qbus (
     logic SA_Written;               // SA register has been written by PDP-11
     logic BRPLY_Asserted;           // BRPLYL has been asserted
     logic BRPLY_Deasserted;         // BRPLY has been deasserted
-    logic BSACK_Asserted;           // BSACKL has been asserted
     
     // latched version of the above for read-and-clear
     logic IR_ReadR;                 //
@@ -93,7 +135,6 @@ module qbus (
     logic SA_WrittenR;              //
     logic BRPLY_AssertedR;          //
     logic BRPLY_DeassertedR;        //
-    logic BSACK_AssertedR;          //
 
     // Both the Qbus and FMC bus have multiplexed address/data
     // these are the addresses latched during the address phase of a bbus cycle for both busses
@@ -167,7 +208,6 @@ module qbus (
         SA_WrittenR <= SA_Written;
         BRPLY_AssertedR <= BRPLY_Asserted;
         BRPLY_DeassertedR <= BRPLY_Deasserted;
-        BSACK_AssertedR <= BSACK_Asserted;
         end
     
     always_comb
@@ -182,7 +222,7 @@ module qbus (
             if(Faddress[21:1] == FADDR_IR[21:1])
                 begin
                 DA_OUT = {8'b0,     // Drive the AD bus with register data
-                        BSACK_AssertedR,
+                        BSACKg,
                         BRPLY_DeassertedR,
                         BRPLY_AssertedR,
                         ~BRPLYf,
@@ -305,7 +345,7 @@ module qbus (
                 Outbound = 1;                               // enable the gate drivers
                 end
             // output the data during the data portion of a write cycle
-            else if(Q_Data_Enable)
+            else if(Q_Data_enable)
                 begin
                 BDALf_OUT[21:18] = 4'b0000;
                 BDALf_OUT[17] = 0;                          // memory parity error enable
@@ -395,20 +435,8 @@ module qbus (
     wire DMA_grant = !BDMGIf && BDMRg && BSYNCf && BRPLYf;
     wire DMA_done = !NE1 && !NWE && Faddress[21:1] == FADDR_CT[21:1] && !NBL1 && DA_IN[15];
 
-
     // when DMA_grant is received, assert BSACKL, and keep on asserting it until the H723 says DMA is done
-    always_ff @(posedge DMA_grant or posedge DMA_done)
-        begin
-        if(DMA_done)BSACKg <= 0;
-        else        BSACKg <= 1;
-        end
-
-    // Detect assertion of BSACKL
-    always_ff @(posedge BSACKg or posedge F_IR_read_enable)
-        begin
-        if (F_IR_read_enable)   BSACK_Asserted <= 0;
-        else                    BSACK_Asserted <= 1;
-        end
+    SRFF BSACK_inst (.set(DMA_grant), .reset(DMA_done), .Q(BSACKg));
 
 
     // capture data read from Qbus

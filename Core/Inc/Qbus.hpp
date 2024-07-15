@@ -1,6 +1,7 @@
 #ifndef QBUS_HPP
 #define QBUS_HPP
 
+void QbusInit();
 void QDMAbegin();
 void QDMAend();
 void Qaddr(uint32_t addr, int write, int byte=0);

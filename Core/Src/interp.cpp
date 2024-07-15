@@ -125,6 +125,7 @@ void interp()
         printf("FATFS mount OK on SPI-NOR\n");
         }
 
+    QbusInit();
 
     while(1)
         {
@@ -1044,17 +1045,14 @@ void interp()
 
 
 //              //                              //
-        HELP(  "q <cmd> <args>                  Qbus menu")
-        else if(buf[0]=='q' && buf[1]==' ')
+        HELP(  "b <cmd> <args>                  Qbus menu")
+        else if(buf[0]=='b' && buf[1]==' ')
             {
             if(p[0] == 'r' && p[1] == ' ')
                 {
                 skip(&p);
-
                 uint32_t addr = gethex(&p);            // get the address
-                uint16_t value;
-
-                value = QReadWord(addr);
+                uint16_t value = QReadWord(addr);
 
                 skip(&p);
                 if(*p=='o')printf("%06o\n", (int)value);
@@ -1062,9 +1060,10 @@ void interp()
                 }
             else if(p[0] == 'w' && p[1]=='w')
                 {
+                skip(&p);
                 uint32_t value = gethex(&p);
                 skip(&p);
-                uint32_t addr = gethex(&p);            // get the address
+                uint16_t addr = gethex(&p);            // get the address
 
                 QWriteWord(addr, value);
                 }

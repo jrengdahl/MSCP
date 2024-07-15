@@ -7,3 +7,4 @@
 *.img
 list
 /ft232h.conf
+/qbus/.lock

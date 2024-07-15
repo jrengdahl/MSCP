@@ -3,12 +3,12 @@
         {
             "name": "la0",
             "type": "la",
-            "uuid": "bba9e9afefdb42b28ce568dd42cdeaab",
+            "uuid": "cea7460a479b4fa4b23895a06375ccdf",
             "trigin_en": false,
             "trigout_en": false,
             "auto_inserted": true,
             "capture_control": true,
-            "data_depth": 256,
+            "data_depth": 2048,
             "input_pipeline": 1,
             "probes": [
                 {
@@ -32,97 +32,12 @@
                     "probe_type": 1
                 },
                 {
-                    "name": "SA_Read",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
                     "name": "Outbound",
                     "width": 1,
                     "probe_type": 1
                 },
                 {
-                    "name": "IR_Read",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "SA_Written",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
                     "name": "FPGA_IRQ",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "Q_SA_selected",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "Q_IR_selected",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "Qaddress0",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "IR_Written",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDMRg",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDMGIf",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDMGOg",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "DMA_grant",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BSACKg",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BSACKL_Asserted",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BSACKL_AssertedR",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BSYNCg",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDINg",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "BDOUTg",
                     "width": 1,
                     "probe_type": 1
                 },
@@ -153,6 +68,36 @@
                 },
                 {
                     "name": "NBL1",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDMRg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDMGIf",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDMGOg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BSACKg",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DMA_grant",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "DMA_done",
                     "width": 1,
                     "probe_type": 1
                 }
@@ -307,62 +252,62 @@
                     },
                     {
                         "name": "la0_probe4",
-                        "net": "SA_Read",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe5",
                         "net": "Outbound",
                         "path": []
                     },
                     {
-                        "name": "la0_probe6",
-                        "net": "IR_Read",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe7",
-                        "net": "SA_Written",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe8",
+                        "name": "la0_probe5",
                         "net": "FPGA_IRQ",
                         "path": []
                     },
                     {
+                        "name": "la0_probe6",
+                        "net": "NE1",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe7",
+                        "net": "NL",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe8",
+                        "net": "NOE",
+                        "path": []
+                    },
+                    {
                         "name": "la0_probe9",
-                        "net": "Q_SA_selected",
+                        "net": "NWE",
                         "path": []
                     },
                     {
                         "name": "la0_probe10",
-                        "net": "Q_IR_selected",
+                        "net": "NBL0",
                         "path": []
                     },
                     {
                         "name": "la0_probe11",
-                        "net": "Qaddress0",
+                        "net": "NBL1",
                         "path": []
                     },
                     {
                         "name": "la0_probe12",
-                        "net": "IR_Written",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe13",
                         "net": "BDMRg",
                         "path": []
                     },
                     {
-                        "name": "la0_probe14",
+                        "name": "la0_probe13",
                         "net": "BDMGIf",
                         "path": []
                     },
                     {
-                        "name": "la0_probe15",
+                        "name": "la0_probe14",
                         "net": "BDMGOg",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15",
+                        "net": "BSACKg",
                         "path": []
                     },
                     {
@@ -372,62 +317,7 @@
                     },
                     {
                         "name": "la0_probe17",
-                        "net": "BSACKg",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe18",
-                        "net": "BSACKL_Asserted",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe19",
-                        "net": "BSACKL_AssertedR",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe20",
-                        "net": "BSYNCg",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe21",
-                        "net": "BDINg",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe22",
-                        "net": "BDOUTg",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe23",
-                        "net": "NE1",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe24",
-                        "net": "NL",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe25",
-                        "net": "NOE",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe26",
-                        "net": "NWE",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe27",
-                        "net": "NBL0",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe28",
-                        "net": "NBL1",
+                        "net": "DMA_done",
                         "path": []
                     }
                 ]
@@ -442,7 +332,7 @@
     ],
     "session": {
         "wizard": {
-            "data_depth": 256,
+            "data_depth": 2048,
             "capture_control": true,
             "selected_nets": [
                 {
@@ -478,14 +368,6 @@
                     "path": []
                 },
                 {
-                    "name": "SA_Read",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
                     "name": "Outbound",
                     "width": 1,
                     "clk_domain": "clock",
@@ -494,135 +376,7 @@
                     "path": []
                 },
                 {
-                    "name": "IR_Read",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "SA_Written",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
                     "name": "FPGA_IRQ",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "Q_SA_selected",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "Q_IR_selected",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "Qaddress0",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "IR_Written",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BDMRg",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BDMGIf",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BDMGOg",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "DMA_grant",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BSACKg",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BSACKL_Asserted",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BSACKL_AssertedR",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BSYNCg",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BDINg",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "BDOUTg",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",
@@ -671,6 +425,54 @@
                 },
                 {
                     "name": "NBL1",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDMRg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDMGIf",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BDMGOg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "BSACKg",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "DMA_grant",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "DMA_done",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",

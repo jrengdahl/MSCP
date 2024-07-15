@@ -20,18 +20,21 @@
 #define Q_DMA_TURN 250                          // delay from BSACK asserted to BSYNC asserted by DMA master
 #define Q_DMA_HOLDOFF 4000                      // min delay from BSACK deasserted to next assertion of BDMR
 
-
-struct Q_Sts
+union Q_Sts
     {
-    unsigned IR_Read            : 1;
-    unsigned IR_Written         : 1;
-    unsigned SA_Read            : 1;
-    unsigned SA_Written         : 1;
-    unsigned BRPLY              : 1;
-    unsigned BRPLY_Asserted     : 1;
-    unsigned BRPLY_Deasserted   : 1;
-    unsigned BSACK_Asserted     : 1;
-    unsigned                    : 8;
+    struct
+        {
+        unsigned short IR_Read            : 1;
+        unsigned short IR_Written         : 1;
+        unsigned short SA_Read            : 1;
+        unsigned short SA_Written         : 1;
+        unsigned short BRPLY              : 1;
+        unsigned short BRPLY_Asserted     : 1;
+        unsigned short BRPLY_Deasserted   : 1;
+        unsigned short BSACK              : 1;
+        unsigned short                    : 8;
+        };
+    uint16_t value;
     };
 
 struct Q_Ctl
@@ -60,12 +63,12 @@ struct Q_Ctl
 
     __IGNORE_WARNING("-Weffc++");                       // suppress warning: 'operator=' should return a reference to '*this' [-Weffc++]
 
-    inline void operator=(const Q_Ctl& other)
+    __FORCEINLINE void operator=(const Q_Ctl& other)
         {
         value = other.value; // Directly assign the 16-bit value
         }
 
-    inline void operator=(const Q_Ctl& other) volatile
+    __FORCEINLINE void operator=(const Q_Ctl& other) volatile
         {
         value = other.value; // Directly assign the 16-bit value
         }
@@ -77,9 +80,9 @@ struct Q_Ctl
 
 // define addresses of registers in the FPGA
 #define QBASE 0x60000000
-#define FADDR_ST        (*(Q_Sts volatile *)(QBASE + 0))
+#define FADDR_ST        (*(uint16_t volatile *)(QBASE + 0))
 #define FADDR_SA        (*(uint16_t volatile *)(QBASE + 2))
-#define FADDR_CT        (*(Q_Ctl volatile *)(QBASE + 4))
+#define FADDR_CT        (*(uint16_t volatile *)(QBASE + 4))
 #define FADDR_LO        (*(uint16_t volatile *)(QBASE + 6))
 #define FADDR_HI        (*(uint16_t volatile *)(QBASE + 8))
 #define FADDR_DATA_OUT  (*(uint16_t volatile *)(QBASE + 10))
@@ -94,24 +97,36 @@ static unsigned Target = 0;
 #define DELAYFOR2(time) for(; Ticks()-stamp2 < TicksPer(time);)
 #define DELAYUNTIL(time) while(Ticks()-Target <0)
 
-#define ASSERT(signal)    do {Ctl.signal = 1; FADDR_CT = Ctl;}while(false)
-#define DEASSERT(signal)  do {Ctl.signal = 0; FADDR_CT = Ctl;}while(false)
+#define ASSERT(signal)    do {Ctl.signal = 1; FADDR_CT = Ctl.value;}while(false)
+#define DEASSERT(signal)  do {Ctl.signal = 0; FADDR_CT = Ctl.value;}while(false)
+#define PULSE(signal)     do {Q_Ctl tmp = Ctl; tmp.signal = 1; FADDR_CT = tmp.value;}while(false)
 
-#define WAITFOR(signal) while(!FADDR_ST.signal)
+#define WAITFOR(signal) for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 1;)
+#define WAITFORNOT(signal) for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 0;)
 
+
+void QbusInit()
+    {
+    FADDR_SA = 0;
+    FADDR_LO = 0;
+    FADDR_HI = 0;
+    FADDR_DATA_OUT = 0;
+    FADDR_CT = 0x80;                // Turn all outputs off and clear the BSACK FF
+    (void)FADDR_ST;                 // read to clear status bits
+    }
 
 void QDMAbegin()
     {
     DELAYUNTIL(Target);                                     // wait until at least 4 usec since lst DMA
     ASSERT(BDMR);
-    WAITFOR(BSACK_Asserted);
+    WAITFOR(BSACK);
     DEASSERT(BDMR);
     Target = Ticks()+ TicksPer(Q_DMA_TURN);                 // set turnaround from BSACK to BSYNC 250 ns
     }
 
 void QDMAend()
     {
-    ASSERT(DMA_done);                                       // this turns off BSACK
+    PULSE(DMA_done);                                        // this turns off BSACK
     Target = Ticks() + TicksPer(Q_DMA_HOLDOFF);             // must wait at least 4 usec before requesting DMA again
     }
 
@@ -125,7 +140,7 @@ void Qaddr(uint32_t addr, int write, int byte)
     Ctl.BBS7 = (addr&017770000) == 017770000;               // output the other address-related signals, and enable the address
     Ctl.BWTBT = write;
     Ctl.Q_Addr_enable = 1;
-    FADDR_CT = Ctl;
+    FADDR_CT = Ctl.value;
 
     DELAYFOR(Q_ADDR_SETUP);                                 // address setup 150 ns
     ASSERT(BSYNC);
@@ -134,15 +149,16 @@ void Qaddr(uint32_t addr, int write, int byte)
     Ctl.BBS7 = 0;                                           // deassert the address and related signals
     Ctl.BWTBT = byte;
     Ctl.Q_Addr_enable = 0;
-    FADDR_CT = Ctl;
+    FADDR_CT = Ctl.value;
     }
 
 
 uint16_t Qread()
     {
     uint16_t data;
+    Q_Sts Sts;
 
-    if(FADDR_ST.BRPLY)                                      // make sure BRPLY is deasserted
+    if(Sts.value=FADDR_ST, Sts.BRPLY)                       // make sure BRPLY is deasserted
         {
         printf("error: BRPLY should not be asserted at beginning of read\n");
         return 0;
@@ -163,7 +179,9 @@ uint16_t Qread()
 
 void Qwrite(uint16_t data)
     {
-    if(FADDR_ST.BRPLY)                                      // make sure BRPLY is deasserted
+    Q_Sts Sts;
+
+    if(Sts.value=FADDR_ST, Sts.BRPLY)                       // make sure BRPLY is deasserted
         {
         printf("error: BRPLY should not be asserted at beginning of write\n");
         return;
