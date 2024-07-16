@@ -93,16 +93,16 @@ static Q_Ctl Ctl = {};                                      // CTL struct
 static unsigned stamp2 = 0;                                 // reference time stamp for Qbus turnaround (BSYNC-to-BSYNC delay)
 static unsigned Target = 0;
 
-#define DELAYFOR(time) for(unsigned stamp = Now(), end = TicksPer(time); Now()-stamp < end;)
-#define DELAYFOR2(time) for(unsigned end = TicksPer(time); Now()-stamp2 < end;)
-#define DELAYUNTIL(target) do{if((target)-Now()<TicksPer(Q_DMA_HOLDOFF))while((int)(target)-(int)Now() >0);}while(false)
+#define DELAYFOR(time)  do{__COMPILER_BARRIER(); for(unsigned stamp = Now(), end = TicksPer(time); Now()-stamp  < end;); __COMPILER_BARRIER();}while(false)
+#define DELAYFOR2(time) do{__COMPILER_BARRIER(); for(unsigned                end = TicksPer(time); Now()-stamp2 < end;); __COMPILER_BARRIER();}while(false)
+#define DELAYUNTIL(target) do{__COMPILER_BARRIER(); if((target)-Now()<TicksPer(Q_DMA_HOLDOFF))while((int)(target)-(int)Now() >0); __COMPILER_BARRIER();}while(false)
 
-#define ASSERT(signal)    do {Ctl.signal = 1; FADDR_CT = Ctl.value;}while(false)
-#define DEASSERT(signal)  do {Ctl.signal = 0; FADDR_CT = Ctl.value;}while(false)
+#define ASSERT(signal)    do {__COMPILER_BARRIER(); Ctl.signal = 1; FADDR_CT = Ctl.value; __COMPILER_BARRIER();}while(false)
+#define DEASSERT(signal)  do {__COMPILER_BARRIER(); Ctl.signal = 0; FADDR_CT = Ctl.value; __COMPILER_BARRIER();}while(false)
 #define PULSE(signal)     do {Q_Ctl tmp = Ctl; tmp.signal = 1; FADDR_CT = tmp.value;}while(false)
 
-#define WAITFOR(signal) for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 1;)
-#define WAITFORNOT(signal) for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 0;)
+#define WAITFOR(signal)    do{__COMPILER_BARRIER(); for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 1;); __COMPILER_BARRIER();}while(false)
+#define WAITFORNOT(signal) do{__COMPILER_BARRIER(); for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 0;); __COMPILER_BARRIER();}while(false)
 
 
 void mark() {__COMPILER_BARRIER();}
@@ -135,37 +135,30 @@ void QDMAend()
     }
 
 
-void Qaddr(uint32_t addr, int write, int byte)
+uint16_t Qread(uint32_t addr)
     {
+    uint16_t data;
+
     DELAYUNTIL(Target);                                     // BSYNC turnaround
 
     FADDR_LO = addr&0xFFFF;                                 // output the address
     FADDR_HI = addr>>16;
     Ctl.BBS7 = (addr&017770000) == 017770000;               // output the other address-related signals, and enable the address
-    Ctl.BWTBT = write;
+    Ctl.BWTBT = 0;
     Ctl.Q_Addr_enable = 1;
     FADDR_CT = Ctl.value;
 
     DELAYFOR(Q_ADDR_SETUP);                                 // address setup 150 ns
-    mark();
     ASSERT(BSYNC);
-    mark();
+//    mark();
     DELAYFOR(Q_ADDR_HOLD);                                  // address hold 100 ns
 
     Ctl.BBS7 = 0;                                           // deassert the address and related signals
-    Ctl.BWTBT = byte;
     Ctl.Q_Addr_enable = 0;
+    Ctl.BDIN = 1;                                           // assert BDIN
     FADDR_CT = Ctl.value;
-    }
 
-
-uint16_t Qread()
-    {
-    uint16_t data;
-
-    mark();
-    ASSERT(BDIN);
-    mark();
+//    mark();
     WAITFOR(BRPLY);
     DELAYFOR(Q_RDATA_SETUP);                                // data setup after BRPLY 200 ns
     data = FADDR_DATA_IN;                                   // read the data
@@ -178,12 +171,33 @@ uint16_t Qread()
     }
 
 
-void Qwrite(uint16_t data)
+void Qwrite(uint32_t addr, uint16_t data)
     {
-    FADDR_DATA_OUT = data;                                  // output the data
-    ASSERT(Q_Data_enable);
+    DELAYUNTIL(Target);                                     // BSYNC turnaround
+
+    FADDR_LO = addr&0xFFFF;                                 // output the address
+    FADDR_HI = addr>>16;
+    Ctl.BBS7 = (addr&017770000) == 017770000;               // output the other address-related signals, and enable the address
+    Ctl.BWTBT = 1;
+    Ctl.Q_Addr_enable = 1;
+    FADDR_CT = Ctl.value;
+
+    DELAYFOR(Q_ADDR_SETUP);                                 // address setup 150 ns
+    ASSERT(BSYNC);
+//    mark();
+    DELAYFOR(Q_ADDR_HOLD);                                  // address hold 100 ns
+
+    FADDR_DATA_OUT = data;                                  // output the data to the FPGA data register
+
+    Ctl.BBS7 = 0;                                           // deassert the address and related signals
+    Ctl.BWTBT = 0;
+    Ctl.Q_Addr_enable = 0;
+    Ctl.Q_Data_enable = 1;
+    FADDR_CT = Ctl.value;
+
     DELAYFOR(Q_DATA_SETUP);                                 // data setup 100 ns
     ASSERT(BDOUT);
+//    mark();
     WAITFOR(BRPLY);
     DELAYFOR(Q_BDOUT_HOLD);                                 // BDOUT hold after BRPLY 150 ns
     DEASSERT(BDOUT);
@@ -197,21 +211,3 @@ void Qwrite(uint16_t data)
     }
 
 
-void QWriteWord(uint32_t addr, uint16_t data)
-    {
-    QDMAbegin();
-    Qaddr(addr, 1, 0);
-    Qwrite(data);
-    QDMAend();
-    }
-
-uint16_t QReadWord(uint32_t addr)
-    {
-    uint16_t data;
-
-    QDMAbegin();
-    Qaddr(addr, 0);
-    data = Qread();
-    QDMAend();
-    return data;
-    }

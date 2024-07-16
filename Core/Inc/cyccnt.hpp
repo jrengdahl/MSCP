@@ -63,7 +63,7 @@ static __FORCEINLINE unsigned Now()
     return xCYCCNT;
     }
 
-static inline unsigned TicksPer(unsigned ns)
+static __FORCEINLINE unsigned TicksPer(unsigned ns)
     {
     return (ns*CPU_FREQ_MHZ)/1000;
     }

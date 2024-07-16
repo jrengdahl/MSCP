@@ -1083,8 +1083,7 @@ void interp()
                     QDMAbegin();
                     for(int i=0; i<count; i++)
                         {
-                        Qaddr(addr+i*2, 0);
-                        values[i] = Qread();
+                        values[i] = Qread(addr+i*2);
                         }
                     QDMAend();
                     }
@@ -1124,8 +1123,7 @@ void interp()
                     QDMAbegin();
                     for(int i=0; i<count; i++)
                         {
-                        Qaddr(addr+i*2, 1, 0);
-                        Qwrite(values[i]);
+                        Qwrite(addr+i*2, values[i]);
                         }
                     QDMAend();
                     }
