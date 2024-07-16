@@ -58,7 +58,7 @@ static inline void Resume()
     }
 
 
-static inline unsigned Ticks()
+static __FORCEINLINE unsigned Now()
     {
     return xCYCCNT;
     }

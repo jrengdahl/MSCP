@@ -93,9 +93,9 @@ static Q_Ctl Ctl = {};                                      // CTL struct
 static unsigned stamp2 = 0;                                 // reference time stamp for Qbus turnaround (BSYNC-to-BSYNC delay)
 static unsigned Target = 0;
 
-#define DELAYFOR(time) for(unsigned stamp = Ticks(); Ticks()-stamp < TicksPer(time);)
-#define DELAYFOR2(time) for(; Ticks()-stamp2 < TicksPer(time);)
-#define DELAYUNTIL(time) while(Ticks()-Target <0)
+#define DELAYFOR(time) for(unsigned stamp = Now(), end = TicksPer(time); Now()-stamp < end;)
+#define DELAYFOR2(time) for(unsigned end = TicksPer(time); Now()-stamp2 < end;)
+#define DELAYUNTIL(target) do{if((target)-Now()<TicksPer(Q_DMA_HOLDOFF))while((int)(target)-(int)Now() >0);}while(false)
 
 #define ASSERT(signal)    do {Ctl.signal = 1; FADDR_CT = Ctl.value;}while(false)
 #define DEASSERT(signal)  do {Ctl.signal = 0; FADDR_CT = Ctl.value;}while(false)
@@ -104,6 +104,8 @@ static unsigned Target = 0;
 #define WAITFOR(signal) for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 1;)
 #define WAITFORNOT(signal) for(Q_Sts Sts = {}; Sts.value = FADDR_ST, Sts.signal != 0;)
 
+
+void mark() {__COMPILER_BARRIER();}
 
 void QbusInit()
     {
@@ -118,16 +120,18 @@ void QbusInit()
 void QDMAbegin()
     {
     DELAYUNTIL(Target);                                     // wait until at least 4 usec since lst DMA
+    __disable_irq();
     ASSERT(BDMR);
     WAITFOR(BSACK);
     DEASSERT(BDMR);
-    Target = Ticks()+ TicksPer(Q_DMA_TURN);                 // set turnaround from BSACK to BSYNC 250 ns
+    Target = Now()+ TicksPer(Q_DMA_TURN);                 // set turnaround from BSACK to BSYNC 250 ns
     }
 
 void QDMAend()
     {
     PULSE(DMA_done);                                        // this turns off BSACK
-    Target = Ticks() + TicksPer(Q_DMA_HOLDOFF);             // must wait at least 4 usec before requesting DMA again
+    __enable_irq();
+    Target = Now() + TicksPer(Q_DMA_HOLDOFF);             // must wait at least 4 usec before requesting DMA again
     }
 
 
@@ -143,7 +147,9 @@ void Qaddr(uint32_t addr, int write, int byte)
     FADDR_CT = Ctl.value;
 
     DELAYFOR(Q_ADDR_SETUP);                                 // address setup 150 ns
+    mark();
     ASSERT(BSYNC);
+    mark();
     DELAYFOR(Q_ADDR_HOLD);                                  // address hold 100 ns
 
     Ctl.BBS7 = 0;                                           // deassert the address and related signals
@@ -156,21 +162,16 @@ void Qaddr(uint32_t addr, int write, int byte)
 uint16_t Qread()
     {
     uint16_t data;
-    Q_Sts Sts;
 
-    if(Sts.value=FADDR_ST, Sts.BRPLY)                       // make sure BRPLY is deasserted
-        {
-        printf("error: BRPLY should not be asserted at beginning of read\n");
-        return 0;
-        }
-
+    mark();
     ASSERT(BDIN);
-    WAITFOR(BRPLY_Asserted);
+    mark();
+    WAITFOR(BRPLY);
     DELAYFOR(Q_RDATA_SETUP);                                // data setup after BRPLY 200 ns
     data = FADDR_DATA_IN;                                   // read the data
     DEASSERT(BDIN);
-    WAITFOR(BRPLY_Deasserted);
-    Target = Ticks() + TicksPer(Q_TURN);                    // capture timestamp for BRPLY off to  next BSYNC on turnaround 300
+    WAITFORNOT(BRPLY);
+    Target = Now() + TicksPer(Q_TURN);                    // capture timestamp for BRPLY off to  next BSYNC on turnaround 300
     DEASSERT(BSYNC);
 
     return data;
@@ -179,26 +180,18 @@ uint16_t Qread()
 
 void Qwrite(uint16_t data)
     {
-    Q_Sts Sts;
-
-    if(Sts.value=FADDR_ST, Sts.BRPLY)                       // make sure BRPLY is deasserted
-        {
-        printf("error: BRPLY should not be asserted at beginning of write\n");
-        return;
-        }
-
     FADDR_DATA_OUT = data;                                  // output the data
     ASSERT(Q_Data_enable);
     DELAYFOR(Q_DATA_SETUP);                                 // data setup 100 ns
     ASSERT(BDOUT);
-    WAITFOR(BRPLY_Asserted);
+    WAITFOR(BRPLY);
     DELAYFOR(Q_BDOUT_HOLD);                                 // BDOUT hold after BRPLY 150 ns
     DEASSERT(BDOUT);
-    stamp2 = Ticks();
+    stamp2 = Now();
     DELAYFOR2(Q_DATA_HOLD);                                 // data hold after BDOUT off 100 ns
     DEASSERT(Q_Data_enable);
-    WAITFOR(BRPLY_Deasserted);
-    Target = Ticks() + TicksPer(Q_TURN);                    // capture timestamp for BRPLY-to-BSYNC turnaround 300
+    WAITFORNOT(BRPLY);
+    Target = Now() + TicksPer(Q_TURN);                    // capture timestamp for BRPLY-to-BSYNC turnaround 300
     DELAYFOR2(Q_SYNC_HOLD);                                 // sync hold after BDOUT off 175 ns
     DEASSERT(BSYNC);
     }

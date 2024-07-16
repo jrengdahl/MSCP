@@ -125,8 +125,6 @@ void interp()
         printf("FATFS mount OK on SPI-NOR\n");
         }
 
-    QbusInit();
-
     while(1)
         {
         const char *p;
@@ -1050,22 +1048,87 @@ void interp()
             {
             if(p[0] == 'r' && p[1] == ' ')
                 {
-                skip(&p);
-                uint32_t addr = gethex(&p);            // get the address
-                uint16_t value = QReadWord(addr);
+                uint16_t values[8];
 
                 skip(&p);
-                if(*p=='o')printf("%06o\n", (int)value);
-                else printf("%04x\n", value);                // print the result
+
+                int repeat = 1;
+                if(*p=='r')
+                    {
+                    ++p;
+                    repeat = getdec(&p);
+                    skip(&p);
+                    }
+
+                uint32_t addr = gethex(&p);            // get the address
+                skip(&p);
+
+                bool octal = false;
+                if(*p=='o')
+                    {
+                    octal = true;
+                    skip(&p);
+                    }
+
+
+                int count = 1;
+                if(isdigit(*p))
+                    {
+                    count = getdec(&p);
+                    skip(&p);
+                    }
+
+                for(int rpt=0; rpt<repeat && !ControlC; yield(), rpt++)
+                    {
+                    QDMAbegin();
+                    for(int i=0; i<count; i++)
+                        {
+                        Qaddr(addr+i*2, 0);
+                        values[i] = Qread();
+                        }
+                    QDMAend();
+                    }
+
+                for(int i=0; i<count; i++)
+                    {
+                    if(octal)printf("%06o\n", (int)values[i]);
+                    else printf("%04x\n", values[i]);                // print the result
+                    }
                 }
             else if(p[0] == 'w' && p[1]=='w')
                 {
-                skip(&p);
-                uint32_t value = gethex(&p);
-                skip(&p);
-                uint16_t addr = gethex(&p);            // get the address
+                uint16_t values[8];
+                int count = 0;
 
-                QWriteWord(addr, value);
+                skip(&p);
+
+                int repeat = 1;
+                if(*p=='r')
+                    {
+                    ++p;
+                    repeat = getdec(&p);
+                    skip(&p);
+                    }
+
+                uint32_t addr = gethex(&p);             // get the address
+                skip(&p);
+
+                while(isxdigit(*p) && count <8)
+                    {
+                    values[count++] = gethex(&p);            // get the data
+                    skip(&p);
+                    }
+
+                for(int rpt=0; rpt<repeat && !ControlC; yield(), rpt++)
+                    {
+                    QDMAbegin();
+                    for(int i=0; i<count; i++)
+                        {
+                        Qaddr(addr+i*2, 1, 0);
+                        Qwrite(values[i]);
+                        }
+                    QDMAend();
+                    }
                 }
             }
 

@@ -117,7 +117,6 @@ module qbus (
     logic [14:0] Q_Ctl;             // bus control, written by H723
     logic [21:0] Q_Addr;            // bus address
     logic [15:0] Q_Data_out;        // bus data output
-    logic [15:0] Q_Data_in;         // bus data output
     
     
     // status bits set by PDP-11 activity, read by the H723
@@ -253,7 +252,7 @@ module qbus (
                 end
             else if(Faddress[21:1] == FADDR_DATA_IN[21:1])
                 begin
-                DA_OUT = Q_Data_in;    // Drive the AD bus with register data
+                DA_OUT = ~BDALf_IN;    // Drive the AD bus directly from the Qbus data
                 end
             end
         end
@@ -439,14 +438,6 @@ module qbus (
     SRFF BSACK_inst (.set(DMA_grant), .reset(DMA_done), .Q(BSACKg));
 
 
-    // capture data read from Qbus
-    always @(negedge BDINg)
-        begin
-        Q_Data_in[15:0] <= !BDALf_IN[15:0];
-        end
-        
-
-     
      
         
 ///////////////////////////////////////////

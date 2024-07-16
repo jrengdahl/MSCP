@@ -3,12 +3,12 @@
         {
             "name": "la0",
             "type": "la",
-            "uuid": "cea7460a479b4fa4b23895a06375ccdf",
+            "uuid": "120010f8034e4f77b48d30c2901cae2d",
             "trigin_en": false,
             "trigout_en": false,
             "auto_inserted": true,
             "capture_control": true,
-            "data_depth": 2048,
+            "data_depth": 4096,
             "input_pipeline": 1,
             "probes": [
                 {
@@ -47,27 +47,12 @@
                     "probe_type": 1
                 },
                 {
-                    "name": "NL",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
                     "name": "NOE",
                     "width": 1,
                     "probe_type": 1
                 },
                 {
                     "name": "NWE",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "NBL0",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "NBL1",
                     "width": 1,
                     "probe_type": 1
                 },
@@ -267,56 +252,41 @@
                     },
                     {
                         "name": "la0_probe7",
-                        "net": "NL",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe8",
                         "net": "NOE",
                         "path": []
                     },
                     {
-                        "name": "la0_probe9",
+                        "name": "la0_probe8",
                         "net": "NWE",
                         "path": []
                     },
                     {
-                        "name": "la0_probe10",
-                        "net": "NBL0",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe11",
-                        "net": "NBL1",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe12",
+                        "name": "la0_probe9",
                         "net": "BDMRg",
                         "path": []
                     },
                     {
-                        "name": "la0_probe13",
+                        "name": "la0_probe10",
                         "net": "BDMGIf",
                         "path": []
                     },
                     {
-                        "name": "la0_probe14",
+                        "name": "la0_probe11",
                         "net": "BDMGOg",
                         "path": []
                     },
                     {
-                        "name": "la0_probe15",
+                        "name": "la0_probe12",
                         "net": "BSACKg",
                         "path": []
                     },
                     {
-                        "name": "la0_probe16",
+                        "name": "la0_probe13",
                         "net": "DMA_grant",
                         "path": []
                     },
                     {
-                        "name": "la0_probe17",
+                        "name": "la0_probe14",
                         "net": "DMA_done",
                         "path": []
                     }
@@ -332,7 +302,7 @@
     ],
     "session": {
         "wizard": {
-            "data_depth": 2048,
+            "data_depth": 4096,
             "capture_control": true,
             "selected_nets": [
                 {
@@ -392,14 +362,6 @@
                     "path": []
                 },
                 {
-                    "name": "NL",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
                     "name": "NOE",
                     "width": 1,
                     "clk_domain": "clock",
@@ -409,22 +371,6 @@
                 },
                 {
                     "name": "NWE",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "NBL0",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "NBL1",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",

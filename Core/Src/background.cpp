@@ -20,6 +20,7 @@
 #include "libgomp.hpp"
 #include "boundaries.h"
 #include "tim.h"
+#include "Qbus.hpp"
 
 
 // The DeferFIFO used by yield, for rudimentary time-slicing.
@@ -80,6 +81,8 @@ void background()                                       // powerup init and back
     CPACR |= CPACR_VFPEN;                               // enable the floating point coprocessor
 
     libgomp_init();                                     // init the OpenMP threading system, including setting background as thread 0
+
+    QbusInit();
 
     #pragma omp parallel num_threads(3)
     if(omp_get_thread_num() == 0)                       // thread 0 runs this:
