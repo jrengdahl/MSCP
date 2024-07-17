@@ -20,6 +20,7 @@
 #include "main.h"
 #include "adc.h"
 #include "fatfs.h"
+#include "memorymap.h"
 #include "octospi.h"
 #include "spi.h"
 #include "tim.h"
@@ -123,6 +124,8 @@ int main(void)
   MX_OCTOSPI1_Init();
   MX_FATFS_Init();
   MX_FMC_Init();
+  MX_SPI1_Init();
+  MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
 
   extern void vcp_init();  
@@ -219,7 +222,8 @@ void PeriphCommonClock_Config(void)
   /** Initializes the peripherals clock
   */
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_ADC
-                              |RCC_PERIPHCLK_SPI2;
+                              |RCC_PERIPHCLK_SPI3|RCC_PERIPHCLK_SPI2
+                              |RCC_PERIPHCLK_SPI1;
   PeriphClkInitStruct.PLL3.PLL3M = 1;
   PeriphClkInitStruct.PLL3.PLL3N = 24;
   PeriphClkInitStruct.PLL3.PLL3P = 3;

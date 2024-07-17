@@ -118,6 +118,15 @@ void interp()
 
     if(f_mount(&FatFs, "0:", 1) != FR_OK)
         {
+        printf("FATFS mount error on SD card 0\n");
+        }
+    else
+        {
+        printf("FATFS mount OK on SD card 0\n");
+        }
+
+    if(f_mount(&FatFs, "3:", 1) != FR_OK)
+        {
         printf("FATFS mount error on SPI-NOR\n");
         }
     else
@@ -881,19 +890,19 @@ void interp()
                 {
                 if (f_mkfs("0:", FM_FAT|FM_SFD, 4096, (uint8_t *)&qbuf, 512) != FR_OK)
                     {
-                    printf("Filesystem format failed on SPI-NOR\n");
+                    printf("Filesystem format failed\n");
                     }
                 else
                     {
-                    printf("Filesystem formatted successfully on SPI-NOR\n");
+                    printf("Filesystem formatted successfully\n");
 
                     if(f_mount(&FatFs, "0:", 1) != FR_OK)
                         {
-                        printf("FATFS mount error on SPI-NOR\n");
+                        printf("FATFS mount error\n");
                         }
                     else
                         {
-                        printf("FATFS mount OK on SPI-NOR\n");
+                        printf("FATFS mount OK\n");
                         }
                     }
                 }
@@ -901,11 +910,11 @@ void interp()
                 {
                 if(f_mount(&FatFs, "0:", 1) != FR_OK)
                     {
-                    printf("FATFS mount error on SPI-NOR\n");
+                    printf("FATFS mount error\n");
                     }
                 else
                     {
-                    printf("FATFS mount OK on SPI-NOR\n");
+                    printf("FATFS mount OK\n");
                     }
                 }
             else if(p[0] == 'w')

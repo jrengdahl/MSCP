@@ -65,12 +65,16 @@ void Error_Handler(void);
 #define PA4_GPIO_Port GPIOA
 #define LED2_Pin GPIO_PIN_9
 #define LED2_GPIO_Port GPIOC
+#define SPI3_NSS_Pin GPIO_PIN_15
+#define SPI3_NSS_GPIO_Port GPIOA
 #define LED1_Pin GPIO_PIN_10
 #define LED1_GPIO_Port GPIOC
 #define LED0_Pin GPIO_PIN_11
 #define LED0_GPIO_Port GPIOC
 #define FPGA_IRQ_Pin GPIO_PIN_3
 #define FPGA_IRQ_GPIO_Port GPIOD
+#define SPI1_NSS_Pin GPIO_PIN_10
+#define SPI1_NSS_GPIO_Port GPIOG
 
 /* USER CODE BEGIN Private defines */
 
