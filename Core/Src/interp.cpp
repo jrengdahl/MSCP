@@ -40,7 +40,7 @@ extern char InterpStack[2048];
 extern omp_thread omp_threads[GOMP_MAX_NUM_THREADS];
 bool waiting_for_command = false;
 
-static FATFS FatFs;
+static FATFS FatFs[3];
 static FIL fil;
 static uint32_t qbuf[512/4];
 
@@ -116,7 +116,16 @@ void interp()
     printf("hello, world!\n");
     printf("build: %s %s\n", __DATE__, __TIME__);
 
-    if(f_mount(&FatFs, "2:", 1) != FR_OK)
+    if(f_mount(&FatFs[0], "0:", 1) != FR_OK)
+        {
+        printf("FATFS mount error on SD card 0\n");
+        }
+    else
+        {
+        printf("FATFS mount OK on SD card 0\n");
+        }
+
+    if(f_mount(&FatFs[2], "2:", 1) != FR_OK)
         {
         printf("FATFS mount error on SPI-NOR\n");
         }
@@ -125,14 +134,6 @@ void interp()
         printf("FATFS mount OK on SPI-NOR\n");
         }
 
-    if(f_mount(&FatFs, "0:", 1) != FR_OK)
-        {
-        printf("FATFS mount error on SD card 0\n");
-        }
-    else
-        {
-        printf("FATFS mount OK on SD card 0\n");
-        }
 
     while(1)
         {
@@ -947,15 +948,6 @@ void interp()
             else
                 {
                 printf("Filesystem formatted successfully\n");
-
-                if(f_mount(&FatFs, p, 1) != FR_OK)
-                    {
-                    printf("FATFS mount error\n");
-                    }
-                else
-                    {
-                    printf("FATFS mount OK\n");
-                    }
                 }
             }
 
@@ -963,7 +955,15 @@ void interp()
         HELP(  "mnt <path>                      mount a FATFS volume")
         else if(buf[0]=='m' && buf[1]=='n' && buf[2]=='t')
             {
-            if(f_mount(&FatFs, p, 1) != FR_OK)
+            int drv = *p-'0';
+
+            if(drv<0 || drv > 2)
+                {
+                printf("invalid drive number\n");
+                continue;
+                }
+
+            if(f_mount(&FatFs[drv], p, 1) != FR_OK)
                 {
                 printf("FATFS mount error\n");
                 }
