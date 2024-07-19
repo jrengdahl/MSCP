@@ -137,7 +137,7 @@ static bool SD_RxDataBlock(BYTE *buff, UINT len)
   /* receive data */
   do {
     SPI_RxBytePtr(buff++);
-  } while(len--);
+  } while(--len);
   /* discard CRC */
   SPI_RxByte();
   SPI_RxByte();
@@ -148,7 +148,7 @@ static bool SD_RxDataBlock(BYTE *buff, UINT len)
 #if _USE_WRITE == 1
 static bool SD_TxDataBlock(const uint8_t *buff, BYTE token)
 {
-  uint8_t resp;
+  uint8_t resp = 0;
   uint8_t i = 0;
   /* wait SD ready */
   if (SD_ReadyWait() != 0xFF) return FALSE;
@@ -214,8 +214,6 @@ static BYTE SD_SendCmd(BYTE cmd, uint32_t arg)
 DSTATUS SD_disk_initialize(BYTE drv)
 {
   uint8_t n, type, ocr[4];
-  /* single drive, drv should be 0 */
-  if(drv) return STA_NOINIT;
   /* no disk */
   if(Stat & STA_NODISK) return Stat;
   /* power on */
@@ -298,7 +296,6 @@ DSTATUS SD_disk_initialize(BYTE drv)
 /* return disk status */
 DSTATUS SD_disk_status(BYTE drv)
 {
-  if (drv) return STA_NOINIT;
   return Stat;
 }
 
@@ -306,7 +303,7 @@ DSTATUS SD_disk_status(BYTE drv)
 DRESULT SD_disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
 {
   /* pdrv should be 0 */
-  if (pdrv || !count) return RES_PARERR;
+  if (!count) return RES_PARERR;
 
   /* no disk */
   if (Stat & STA_NOINIT) return RES_NOTRDY;
@@ -348,7 +345,7 @@ DRESULT SD_disk_read(BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
 DRESULT SD_disk_write(BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
 {
   /* pdrv should be 0 */
-  if (pdrv || !count) return RES_PARERR;
+  if (!count) return RES_PARERR;
 
   /* no disk */
   if (Stat & STA_NOINIT) return RES_NOTRDY;
@@ -406,8 +403,6 @@ DRESULT SD_disk_ioctl(BYTE drv, BYTE ctrl, void *buff)
   uint8_t n, csd[16], *ptr = buff;
   WORD csize;
 
-  /* pdrv should be 0 */
-  if (drv) return RES_PARERR;
   res = RES_ERROR;
 
   if (ctrl == CTRL_POWER)

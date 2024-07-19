@@ -116,6 +116,15 @@ void interp()
     printf("hello, world!\n");
     printf("build: %s %s\n", __DATE__, __TIME__);
 
+    if(f_mount(&FatFs, "2:", 1) != FR_OK)
+        {
+        printf("FATFS mount error on SPI-NOR\n");
+        }
+    else
+        {
+        printf("FATFS mount OK on SPI-NOR\n");
+        }
+
     if(f_mount(&FatFs, "0:", 1) != FR_OK)
         {
         printf("FATFS mount error on SD card 0\n");
@@ -123,15 +132,6 @@ void interp()
     else
         {
         printf("FATFS mount OK on SD card 0\n");
-        }
-
-    if(f_mount(&FatFs, "3:", 1) != FR_OK)
-        {
-        printf("FATFS mount error on SPI-NOR\n");
-        }
-    else
-        {
-        printf("FATFS mount OK on SPI-NOR\n");
         }
 
     while(1)
@@ -886,9 +886,14 @@ void interp()
         HELP(  "ff                              FATFS tests")
         else if(buf[0]=='f' && buf[1]=='f')
             {
+            const char *drivenames[3]= {"0:","1:","2:"};
+
+            int drv = getdec(&p);
+            skip(&p);
+
             if(p[0] == 'f')
                 {
-                if (f_mkfs("0:", FM_FAT|FM_SFD, 4096, (uint8_t *)&qbuf, 512) != FR_OK)
+                if (f_mkfs(drivenames[drv], FM_FAT|FM_SFD, 4096, (uint8_t *)&qbuf, 512) != FR_OK)
                     {
                     printf("Filesystem format failed\n");
                     }
@@ -896,7 +901,7 @@ void interp()
                     {
                     printf("Filesystem formatted successfully\n");
 
-                    if(f_mount(&FatFs, "0:", 1) != FR_OK)
+                    if(f_mount(&FatFs, drivenames[drv], 1) != FR_OK)
                         {
                         printf("FATFS mount error\n");
                         }
@@ -908,7 +913,7 @@ void interp()
                 }
             else if(p[0] == 'm')
                 {
-                if(f_mount(&FatFs, "0:", 1) != FR_OK)
+                if(f_mount(&FatFs, drivenames[drv], 1) != FR_OK)
                     {
                     printf("FATFS mount error\n");
                     }
@@ -921,7 +926,7 @@ void interp()
                 {
 
                 // Create and write to a file
-                if(f_open(&fil, "0:hello.txt", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
+                if(f_open(&fil, "2:hello.txt", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
                     {
                     UINT bw; // Bytes written
 
@@ -941,14 +946,14 @@ void interp()
 
                     do
                         {
-                        res = f_read(&fil, qbuf, sizeof(qbuf), &br);
+                        res = f_read(&fil, qbuf, 512, &br);
                         if(res == FR_OK)
                             {
                             dump(qbuf, br);
                             }
                         }
                     while(res == FR_OK
-                       && br == sizeof(qbuf)
+                       && br == 512
                        && !ControlC);
 
                     printf("res = %d\n", res);

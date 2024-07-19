@@ -135,7 +135,9 @@ int main(void)
   HAL_TIM_Base_Start(&htim2);
 
   extern Diskio_drvTypeDef  USER_Driver;
-  FATFS_LinkDriver(&USER_Driver, "0:");
+  FATFS_LinkDriverEx(&USER_Driver, "0:", 0);
+//  FATFS_LinkDriverEx(&USER_Driver, "1:", 1);
+  FATFS_LinkDriverEx(&USER_Driver, "2:", 2);
 
   extern void background();
   background();
