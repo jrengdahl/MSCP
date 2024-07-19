@@ -886,43 +886,7 @@ void interp()
         HELP(  "ff                              FATFS tests")
         else if(buf[0]=='f' && buf[1]=='f')
             {
-            const char *drivenames[3]= {"0:","1:","2:"};
-
-            int drv = getdec(&p);
-            skip(&p);
-
-            if(p[0] == 'f')
-                {
-                if (f_mkfs(drivenames[drv], FM_FAT|FM_SFD, 4096, (uint8_t *)&qbuf, 512) != FR_OK)
-                    {
-                    printf("Filesystem format failed\n");
-                    }
-                else
-                    {
-                    printf("Filesystem formatted successfully\n");
-
-                    if(f_mount(&FatFs, drivenames[drv], 1) != FR_OK)
-                        {
-                        printf("FATFS mount error\n");
-                        }
-                    else
-                        {
-                        printf("FATFS mount OK\n");
-                        }
-                    }
-                }
-            else if(p[0] == 'm')
-                {
-                if(f_mount(&FatFs, drivenames[drv], 1) != FR_OK)
-                    {
-                    printf("FATFS mount error\n");
-                    }
-                else
-                    {
-                    printf("FATFS mount OK\n");
-                    }
-                }
-            else if(p[0] == 'w')
+            if(p[0] == 'w')
                 {
 
                 // Create and write to a file
@@ -965,39 +929,117 @@ void interp()
                     printf("file %s could not be opened\n", p);
                     }
                 }
-            else if(p[0] == 'l' && p[1] == 's')
+            else printf("unrecognized subcommand\n");
+            }
+
+
+//              //                              //
+        HELP(  "fmt <blocks> <path>             FATFS format a FATFS drive")
+        else if(buf[0]=='f' && buf[1]=='m' && buf[2]=='t')
+            {
+            int blocks = getdec(&p);
+            skip(&p);
+
+            if (f_mkfs(p, FM_FAT|FM_SFD, blocks, (uint8_t *)&qbuf, 512) != FR_OK)
                 {
-                skip(&p);
+                printf("Filesystem format failed\n");
+                }
+            else
+                {
+                printf("Filesystem formatted successfully\n");
 
-                FRESULT res;
-                DIR dir;
-                FILINFO fno;
-
-                // Open the directory
-                res = f_opendir(&dir, p); /* Open the directory */
-                if (res == FR_OK)
+                if(f_mount(&FatFs, p, 1) != FR_OK)
                     {
-                    while (1)
-                        {
-                        res = f_readdir(&dir, &fno);                    /* Read a directory item */
-                        if (res != FR_OK || fno.fname[0] == 0) break;   /* Break on error or end of dir */
-                        if (fno.fattrib & AM_DIR)
-                            {                     /* It is a directory */
-                            printf("  <DIR>  %s\n", fno.fname);
-                            }
-                        else
-                            {                                        /* It is a file */
-                            printf("  %8lu  %s\n", fno.fsize, fno.fname);
-                            }
-                        }
-                    f_closedir(&dir);
+                    printf("FATFS mount error\n");
                     }
                 else
                     {
-                    printf("Failed to open directory: %d\n", res);
+                    printf("FATFS mount OK\n");
                     }
                 }
-            else printf("unrecognized subcommand\n");
+            }
+
+//              //                              //
+        HELP(  "mnt <path>                      mount a FATFS volume")
+        else if(buf[0]=='m' && buf[1]=='n' && buf[2]=='t')
+            {
+            if(f_mount(&FatFs, p, 1) != FR_OK)
+                {
+                printf("FATFS mount error\n");
+                }
+            else
+                {
+                printf("FATFS mount OK\n");
+                }
+            }
+
+//              //                              //
+        HELP(  "cat <path>                      copy a file to the console")
+        else if(buf[0]=='c' && buf[1]=='a' && buf[2]=='t')
+            {
+            if(f_open(&fil, p, FA_READ) == FR_OK)
+                {
+                unsigned br; // Bytes read
+                FRESULT res;
+
+                do
+                    {
+                    res = f_read(&fil, qbuf, 512, &br);
+                    if(res == FR_OK)
+                        {
+                        _write(1, (const char *)&qbuf, br);
+                        }
+                    }
+                while(res == FR_OK
+                   && br == 512
+                   && !ControlC);
+
+                if(res)
+                    {
+                    printf("res = %d\n", res);
+                    }
+
+                f_close(&fil);
+                }
+            else
+                {
+                printf("file %s could not be opened\n", p);
+                }
+            }
+
+
+
+//              //                              //
+        HELP(  "ls <path>                       list the contents of a directory")
+        else if(buf[0]=='l' && buf[1]=='s')
+            {
+            FRESULT res;
+            DIR dir;
+            FILINFO fno;
+
+            // Open the directory
+            res = f_opendir(&dir, p); /* Open the directory */
+            if (res == FR_OK)
+                {
+                while (1)
+                    {
+                    res = f_readdir(&dir, &fno);                    /* Read a directory item */
+                    if (res != FR_OK || fno.fname[0] == 0) break;   /* Break on error or end of dir */
+                    if (fno.fattrib & AM_DIR)
+                        {                     /* It is a directory */
+                        printf("  <DIR>  %s\n", fno.fname);
+                        }
+                    else
+                        {                                        /* It is a file */
+                        printf("  %8lu  %s\n", fno.fsize, fno.fname);
+                        }
+                    }
+                f_closedir(&dir);
+                }
+            else
+                {
+                printf("Failed to open directory: %d\n", res);
+                }
             }
 
 
