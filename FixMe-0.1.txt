@@ -48,3 +48,6 @@ See if there is a way to have both the H723 and the FPGA connected to the SPI-NO
 
 
 Enable the H723 to assert INITL on the backplane.
+
+
+Route BOOT0 also to a spare input, so the pushbutton can be used as a user input.

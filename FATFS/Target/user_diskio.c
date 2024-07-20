@@ -79,7 +79,7 @@ Diskio_drvTypeDef  USER_Driver =
   * @retval DSTATUS: Operation status
   */
 DSTATUS USER_initialize (
-	BYTE pdrv           /* Physical drive nmuber to identify the drive */
+	BYTE pdrv           /* Physical drive number to identify the drive */
 )
 {
   /* USER CODE BEGIN INIT */
