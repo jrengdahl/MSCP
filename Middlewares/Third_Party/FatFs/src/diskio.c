@@ -12,7 +12,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "diskio.h"
-#include "ff_gen_drv.h"
+#include "user_diskio.h"
 
 #if defined ( __GNUC__ )
 #ifndef __weak

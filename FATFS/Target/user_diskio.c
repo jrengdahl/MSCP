@@ -34,7 +34,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
-#include "ff_gen_drv.h"
+#include "user_diskio.h"
 #include "QSPI.h"
 #include "FATFS_SD.h"
 
@@ -45,31 +45,41 @@
 /* Disk status */
 static volatile DSTATUS Stat = STA_NOINIT;
 
-/* USER CODE END DECL */
 
 /* Private function prototypes -----------------------------------------------*/
-DSTATUS USER_initialize (BYTE pdrv);
-DSTATUS USER_status (BYTE pdrv);
-DRESULT USER_read (BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
-#if _USE_WRITE == 1
-  DRESULT USER_write (BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);
-#endif /* _USE_WRITE == 1 */
-#if _USE_IOCTL == 1
-  DRESULT USER_ioctl (BYTE pdrv, BYTE cmd, void *buff);
-#endif /* _USE_IOCTL == 1 */
 
-Diskio_drvTypeDef  USER_Driver =
-{
-  USER_initialize,
-  USER_status,
-  USER_read,
-#if  _USE_WRITE
-  USER_write,
-#endif  /* _USE_WRITE == 1 */
-#if  _USE_IOCTL == 1
-  USER_ioctl,
-#endif /* _USE_IOCTL == 1 */
-};
+DSTATUS QSPI_initialize (BYTE pdrv);
+DSTATUS QSPI_status (BYTE pdrv);
+DRESULT QSPI_read (BYTE pdrv, BYTE *buff, DWORD sector, UINT count);
+DRESULT QSPI_write (BYTE pdrv, const BYTE *buff, DWORD sector, UINT count);
+DRESULT QSPI_ioctl (BYTE pdrv, BYTE cmd, void *buff);
+
+Diskio_drvTypeDef  QSPI_Driver =
+  {
+  QSPI_initialize,
+  QSPI_status,
+  QSPI_read,
+  QSPI_write,
+  QSPI_ioctl,
+  };
+
+Diskio_drvTypeDef  SD_disk_Driver =
+  {
+  SD_disk_initialize,
+  SD_disk_status,
+  SD_disk_read,
+  SD_disk_write,
+  SD_disk_ioctl,
+  };
+
+Disk_drvTypeDef disk =
+  {
+  {0, 0, 0},
+  {&SD_disk_Driver, &SD_disk_Driver, &QSPI_Driver},
+  3
+  };
+
+/* USER CODE END DECL */
 
 /* Private functions ---------------------------------------------------------*/
 
@@ -78,20 +88,13 @@ Diskio_drvTypeDef  USER_Driver =
   * @param  pdrv: Physical drive number (0..)
   * @retval DSTATUS: Operation status
   */
-DSTATUS USER_initialize (
+DSTATUS QSPI_initialize (
 	BYTE pdrv           /* Physical drive number to identify the drive */
 )
 {
   /* USER CODE BEGIN INIT */
-    if(pdrv<2)
-        {
-        return SD_disk_initialize(pdrv);
-        }
-    else
-        {
-        // Initialize the SPI-NOR flash (already initialized in main)
-        return RES_OK;
-        }
+    // Initialize the SPI-NOR flash (already initialized in main)
+    return RES_OK;
   /* USER CODE END INIT */
 }
 
@@ -100,20 +103,13 @@ DSTATUS USER_initialize (
   * @param  pdrv: Physical drive number (0..)
   * @retval DSTATUS: Operation status
   */
-DSTATUS USER_status (
+DSTATUS QSPI_status (
 	BYTE pdrv       /* Physical drive number to identify the drive */
 )
 {
   /* USER CODE BEGIN STATUS */
-    if(pdrv<2)
-        {
-        return SD_disk_status(pdrv);
-        }
-    else
-        {
-        // Return the status of the SPI-NOR flash
-        return RES_OK;
-        }
+    // Return the status of the SPI-NOR flash
+    return RES_OK;
   /* USER CODE END STATUS */
 }
 
@@ -125,7 +121,7 @@ DSTATUS USER_status (
   * @param  count: Number of sectors to read (1..128)
   * @retval DRESULT: Operation result
   */
-DRESULT USER_read (
+DRESULT QSPI_read (
 	BYTE pdrv,      /* Physical drive nmuber to identify the drive */
 	BYTE *buff,     /* Data buffer to store read data */
 	DWORD sector,   /* Sector address in LBA */
@@ -134,21 +130,14 @@ DRESULT USER_read (
 {
   /* USER CODE BEGIN READ */
 
-    if(pdrv<2)
+    uint32_t address = sector * QSPI_SECTOR_SIZE;
+    for (UINT i = 0; i < count*2; i++)
         {
-        return SD_disk_read(pdrv, buff, sector, count);
+        if (QSPI_ReadPage(&hospi1, address, buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
+        address += QSPI_PAGE_SIZE;
         }
-    else
-        {
-        uint32_t address = sector * QSPI_SECTOR_SIZE;
-        for (UINT i = 0; i < count*2; i++)
-            {
-            if (QSPI_ReadPage(&hospi1, address, buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
-            address += QSPI_PAGE_SIZE;
-            }
 
-        return RES_OK;
-        }
+    return RES_OK;
 
   /* USER CODE END READ */
 }
@@ -161,8 +150,7 @@ DRESULT USER_read (
   * @param  count: Number of sectors to write (1..128)
   * @retval DRESULT: Operation result
   */
-#if _USE_WRITE == 1
-DRESULT USER_write (
+DRESULT QSPI_write (
 	BYTE pdrv,          /* Physical drive nmuber to identify the drive */
 	const BYTE *buff,   /* Data to be written */
 	DWORD sector,       /* Sector address in LBA */
@@ -171,29 +159,22 @@ DRESULT USER_write (
 {
   /* USER CODE BEGIN WRITE */
 
-    if(pdrv<2)
+    uint32_t address = sector * QSPI_SECTOR_SIZE;
+    for (UINT i = 0; i < count*2; i++)
         {
-        return SD_disk_write(pdrv, buff, sector, count);
-        }
-    else
-        {
-        uint32_t address = sector * QSPI_SECTOR_SIZE;
-        for (UINT i = 0; i < count*2; i++)
+        if((address & (QSPI_BLOCK_SIZE-1)) == 0
+        && QSPI_EraseSector(&hospi1, address) != HAL_OK)
             {
-            if((address & (QSPI_BLOCK_SIZE-1)) == 0
-            && QSPI_EraseSector(&hospi1, address) != HAL_OK)
-                {
-                return RES_ERROR;
-                }
-            if (QSPI_WritePage(&hospi1, address, (uint8_t *)buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
-            address += QSPI_PAGE_SIZE;
+            return RES_ERROR;
             }
-
-        return RES_OK;
+        if (QSPI_WritePage(&hospi1, address, (uint8_t *)buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
+        address += QSPI_PAGE_SIZE;
         }
-  /* USER CODE END WRITE */
+
+    return RES_OK;
+
+    /* USER CODE END WRITE */
 }
-#endif /* _USE_WRITE == 1 */
 
 /**
   * @brief  I/O control operation
@@ -202,38 +183,40 @@ DRESULT USER_write (
   * @param  *buff: Buffer to send/receive control data
   * @retval DRESULT: Operation result
   */
-#if _USE_IOCTL == 1
-DRESULT USER_ioctl (
+DRESULT QSPI_ioctl (
 	BYTE pdrv,      /* Physical drive nmuber (0..) */
 	BYTE cmd,       /* Control code */
 	void *buff      /* Buffer to send/receive control data */
 )
 {
   /* USER CODE BEGIN IOCTL */
-    if(pdrv<2)
+
+    switch (cmd)
         {
-        return SD_disk_ioctl(pdrv, cmd, buff);
+    case CTRL_SYNC:
+        return RES_OK;
+    case GET_SECTOR_COUNT:
+        *(DWORD *)buff = QSPI_TOTAL_SIZE / QSPI_SECTOR_SIZE;
+        return RES_OK;
+    case GET_SECTOR_SIZE:
+        *(WORD *)buff = QSPI_SECTOR_SIZE;
+        return RES_OK;
+    case GET_BLOCK_SIZE:
+        *(DWORD *)buff = QSPI_BLOCK_SIZE / QSPI_SECTOR_SIZE;
+        return RES_OK;
+    default:
+        return RES_PARERR;
         }
-    else
-        {
-        switch (cmd)
-            {
-        case CTRL_SYNC:
-            return RES_OK;
-        case GET_SECTOR_COUNT:
-            *(DWORD *)buff = QSPI_TOTAL_SIZE / QSPI_SECTOR_SIZE;
-            return RES_OK;
-        case GET_SECTOR_SIZE:
-            *(WORD *)buff = QSPI_SECTOR_SIZE;
-            return RES_OK;
-        case GET_BLOCK_SIZE:
-            *(DWORD *)buff = QSPI_BLOCK_SIZE / QSPI_SECTOR_SIZE;
-            return RES_OK;
-        default:
-            return RES_PARERR;
-            }
-        }
+
   /* USER CODE END IOCTL */
+
 }
-#endif /* _USE_IOCTL == 1 */
+
+
+DWORD get_fattime(void)
+{
+  /* USER CODE BEGIN get_fattime */
+  return 0;
+  /* USER CODE END get_fattime */
+}
 

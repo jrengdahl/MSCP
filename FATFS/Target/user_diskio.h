@@ -29,9 +29,40 @@
 /* USER CODE BEGIN 0 */
 
 /* Includes ------------------------------------------------------------------*/
+
+#include "ffconf.h"
+#include "diskio.h"
+
 /* Exported types ------------------------------------------------------------*/
+
+/**
+  * @brief  Disk IO Driver structure definition
+  */
+
+typedef struct
+  {
+  DSTATUS (*disk_initialize) (BYTE);                            /*!< Initialize Disk Drive                     */
+  DSTATUS (*disk_status)     (BYTE);                            /*!< Get Disk Status                           */
+  DRESULT (*disk_read)       (BYTE, BYTE*, DWORD, UINT);        /*!< Read Sector(s)                            */
+  DRESULT (*disk_write)      (BYTE, const BYTE*, DWORD, UINT);  /*!< Write Sector(s) when _USE_WRITE = 0       */
+  DRESULT (*disk_ioctl)      (BYTE, BYTE, void*);               /*!< I/O control operation when _USE_IOCTL = 1 */
+  }Diskio_drvTypeDef;
+
+/**
+  * @brief  Global Disk IO Drivers structure definition
+  */
+
+typedef struct
+  {
+  uint8_t                 is_initialized[_VOLUMES];
+  const Diskio_drvTypeDef *drv[_VOLUMES];
+  volatile uint8_t        nbr;
+  }Disk_drvTypeDef;
+
+
 /* Exported constants --------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
+
 extern Diskio_drvTypeDef  USER_Driver;
 
 /* USER CODE END 0 */

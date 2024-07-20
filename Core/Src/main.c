@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
-#include "fatfs.h"
 #include "memorymap.h"
 #include "octospi.h"
 #include "spi.h"
@@ -122,7 +121,6 @@ int main(void)
   MX_ADC3_Init();
   MX_SPI2_Init();
   MX_OCTOSPI1_Init();
-  MX_FATFS_Init();
   MX_FMC_Init();
   MX_SPI1_Init();
   MX_SPI3_Init();
@@ -133,11 +131,6 @@ int main(void)
 
   /* start TIM2, whihc is used for the 1 usec clock */
   HAL_TIM_Base_Start(&htim2);
-
-  extern Diskio_drvTypeDef  USER_Driver;
-  FATFS_LinkDriver(&USER_Driver, "0:");
-//  FATFS_LinkDriver(&USER_Driver, "1:");
-  FATFS_LinkDriver(&USER_Driver, "2:");
 
   extern void background();
   background();
