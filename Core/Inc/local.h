@@ -12,10 +12,10 @@
 
 extern void dump(void *p, int size);
 extern void getline(char *buf, int size);
-extern int getdec(const char **p);
-extern uint64_t getlong(const char **p);
-extern uintptr_t gethex(const char **p);
-extern void skip(const char **p);
+extern int getdec(char **p);
+extern uint64_t getlong(char **p);
+extern uintptr_t gethex(char **p);
+extern void skip(char **p);
 
 #define izdigit(p) (*p=='o' || ('0'<=*p&&*p<='9') || ('a'<=*p&&*p<='a') || ('A'<=*p&&*p<='A'))
 

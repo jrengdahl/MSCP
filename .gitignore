@@ -8,3 +8,5 @@
 list
 /ft232h.conf
 /qbus/.lock
+/MSCP.und/id.txt
+/MSCP.und/settings.xml

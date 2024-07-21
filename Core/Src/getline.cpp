@@ -12,7 +12,7 @@ extern "C" int __io_getchar();
 
 
 // get a decimal number from the command line buffer
-int getdec(const char **p)
+int getdec(char **p)
     {
     int x=0;
 
@@ -31,7 +31,7 @@ int getdec(const char **p)
     }
 
 // get a long decimal number from the command lne buffer
-uint64_t getlong(const char **p)
+uint64_t getlong(char **p)
     {
     uint64_t x=0;
 
@@ -50,7 +50,7 @@ uint64_t getlong(const char **p)
     }
 
 // get a hex number from the command line buffer
-uintptr_t gethex(const char **p)
+uintptr_t gethex(char **p)
     {
     uintptr_t x=0;
 
@@ -80,7 +80,7 @@ uintptr_t gethex(const char **p)
     }
 
 // skip a pointer to the start of the next argument in the command line buffer
-void skip(const char **p)
+void skip(char **p)
     {
     while(**p && **p!=' ')(*p)++;                                               // skip the arg that p points to
     while(**p && **p==' ')(*p)++;                                               // skip any following whitespace

@@ -125,6 +125,15 @@ void interp()
         printf("FATFS mount OK on SD card 0\n");
         }
 
+    if(f_mount(&FatFs[1], "1:", 1) != FR_OK)
+        {
+        printf("FATFS mount error on SD card 1\n");
+        }
+    else
+        {
+        printf("FATFS mount OK on SD card 1\n");
+        }
+
     if(f_mount(&FatFs[2], "2:", 1) != FR_OK)
         {
         printf("FATFS mount error on SPI-NOR\n");
@@ -137,7 +146,7 @@ void interp()
 
     while(1)
         {
-        const char *p;
+        char *p;
 
         yield();
         libgomp_reinit();                                                       // reset things in OPenMP such as the default number of threads
@@ -883,56 +892,6 @@ void interp()
 
 
 
-//              //                              //
-        HELP(  "ff                              FATFS tests")
-        else if(buf[0]=='f' && buf[1]=='f')
-            {
-            if(p[0] == 'w')
-                {
-
-                // Create and write to a file
-                if(f_open(&fil, "2:hello.txt", FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
-                    {
-                    UINT bw; // Bytes written
-
-                    f_write(&fil, "Hello, FATFS!", 13, &bw);
-                    f_close(&fil);
-                    }
-                }
-            else if(p[0] == 'r')
-                {
-                skip(&p);
-
-                // Read from the file
-                if(f_open(&fil, p, FA_READ) == FR_OK)
-                    {
-                    unsigned br; // Bytes read
-                    FRESULT res;
-
-                    do
-                        {
-                        res = f_read(&fil, qbuf, 512, &br);
-                        if(res == FR_OK)
-                            {
-                            dump(qbuf, br);
-                            }
-                        }
-                    while(res == FR_OK
-                       && br == 512
-                       && !ControlC);
-
-                    printf("res = %d\n", res);
-
-                    f_close(&fil);
-                    }
-                else
-                    {
-                    printf("file %s could not be opened\n", p);
-                    }
-                }
-            else printf("unrecognized subcommand\n");
-            }
-
 
 //              //                              //
         HELP(  "fmt <blocks> <path>             FATFS format a FATFS drive")
@@ -1007,6 +966,36 @@ void interp()
                 }
             }
 
+//              //                              //
+        HELP(  "dump <path>                     dump a file to the console")
+        else if(buf[0]=='d' && buf[1]=='u' && buf[2]=='m')
+            {
+            // Read from the file
+             if(f_open(&fil, p, FA_READ) != FR_OK)
+                 {
+                 printf("file %s could not be opened\n", p);
+                 continue;
+                 }
+
+             unsigned br; // Bytes read
+             FRESULT res;
+
+             do
+                 {
+                 res = f_read(&fil, qbuf, 512, &br);
+                 if(res == FR_OK)
+                     {
+                     dump(qbuf, br);
+                     }
+                 }
+             while(res == FR_OK
+                && br == 512
+                && !ControlC);
+
+             printf("res = %d\n", res);
+
+             f_close(&fil);
+             }
 
 
 //              //                              //
@@ -1016,31 +1005,208 @@ void interp()
             FRESULT res;
             DIR dir;
             FILINFO fno;
+            FATFS *fs;
+            DWORD fre_clust, fre_sect, tot_sect;
 
             // Open the directory
             res = f_opendir(&dir, p); /* Open the directory */
-            if (res == FR_OK)
+            if (res != FR_OK)
                 {
-                while (1)
-                    {
-                    res = f_readdir(&dir, &fno);                    /* Read a directory item */
-                    if (res != FR_OK || fno.fname[0] == 0) break;   /* Break on error or end of dir */
-                    if (fno.fattrib & AM_DIR)
-                        {                     /* It is a directory */
-                        printf("  <DIR>  %s\n", fno.fname);
-                        }
-                    else
-                        {                                        /* It is a file */
-                        printf("  %8lu  %s\n", fno.fsize, fno.fname);
-                        }
+                printf("Failed to open directory: %d\n", res);
+                continue;
+                }
+
+            while (1)
+                {
+                res = f_readdir(&dir, &fno);                    /* Read a directory item */
+                if (res != FR_OK || fno.fname[0] == 0) break;   /* Break on error or end of dir */
+                if (fno.fattrib & AM_DIR)
+                    {                     /* It is a directory */
+                    printf("  <DIR>  %s\n", fno.fname);
                     }
-                f_closedir(&dir);
+                else
+                    {                                        /* It is a file */
+                    printf("  %8lu  %s\n", fno.fsize, fno.fname);
+                    }
+                }
+            f_closedir(&dir);
+
+            f_getfree(p, &fre_clust, &fs);
+            tot_sect = (fs->n_fatent - 2) * fs->csize;
+            fre_sect = fre_clust * fs->csize;
+
+            if(tot_sect/2 <100*1024)
+                {
+                printf("volume size: %lu KB\n", tot_sect / 2);
+                printf("free space:  %lu KB\n", fre_sect / 2);
+                }
+            else if(tot_sect/2 <100*1024*1024)
+                {
+                printf("volume size: %lu MB\n", tot_sect / (2*1024));
+                printf("free space:  %lu MB\n", fre_sect / (2*1024));
                 }
             else
                 {
-                printf("Failed to open directory: %d\n", res);
+                printf("volume size: %lu GB\n", tot_sect / (2*1024*1024));
+                printf("free space:  %lu GB\n", fre_sect / (2*1024*1024));
                 }
             }
+
+//              //                              //
+        HELP(  "cp <source path> <dest path>    copy a file")
+        else if(buf[0]=='c' && buf[1]=='p')
+            {
+            char *src_path = p;
+            skip(&p);
+            p[-1] = 0;
+            char *dst_path = p;
+
+            FIL src_file, dst_file;
+            FRESULT res;
+            UINT br, bw;
+
+            // Open the source file
+            res = f_open(&src_file, src_path, FA_READ);
+            if (res != FR_OK)
+                {
+                printf("Failed to open source file: %s\n", src_path);
+                continue;
+                }
+
+            // Open or create the destination file
+            res = f_open(&dst_file, dst_path, FA_WRITE | FA_CREATE_ALWAYS);
+            if (res != FR_OK)
+                {
+                printf("Failed to open destination file: %s\n", dst_path);
+                f_close(&src_file);
+                continue;
+                }
+
+            // Copy data from source to destination
+            while (1)
+                {
+                // Read a chunk of data from the source file
+                res = f_read(&src_file, qbuf, 512, &br);
+                if (res != FR_OK || br == 0) break;  // Check for end of file or read error
+
+                // Write the chunk of data to the destination file
+                res = f_write(&dst_file, qbuf, br, &bw);
+                if (res != FR_OK || bw < br)
+                    {
+                    printf("Failed to write to destination file: %s\n", dst_path);
+                    f_close(&src_file);
+                    f_close(&dst_file);
+                    continue;
+                    }
+                }
+
+            // Close both files
+            f_close(&src_file);
+            f_close(&dst_file);
+
+            // Check if the loop exited due to an error
+            if (res != FR_OK)
+                {
+                printf("Failed to copy file: %s to %s\n", src_path, dst_path);
+                continue;
+                }
+
+            printf("File copied successfully: %s to %s\n", src_path, dst_path);
+            }
+
+//              //                              //
+        HELP(  "diff <path1> <path2>            compare two files")
+        else if(buf[0]=='d' && buf[1]=='i' && buf[2]=='f')
+            {
+            char *path1 = p;
+            skip(&p);
+            p[-1] = 0;
+            char *path2 = p;
+
+            FIL f1, f2;
+            FRESULT res;
+
+            // Open the file 1
+            res = f_open(&f1, path1, FA_READ);
+            if (res != FR_OK)
+                {
+                printf("Failed to open first file: %s\n", path1);
+                continue;
+                }
+
+            // Open file 2
+            res = f_open(&f2, path2, FA_READ);
+            if (res != FR_OK)
+                {
+                printf("Failed to open file 2: %s\n", path2);
+                f_close(&f1);
+                continue;
+                }
+
+            DWORD offset = 0;
+            UINT br1, br2;
+
+
+            // Compare the files byte by byte
+            while (1)
+                {
+                // Read a chunk from each file
+                res = f_read(&f1, (uint8_t *)&qbuf[0], 16, &br1);
+                if (res != FR_OK)
+                    {
+                    printf("Failed to read from file: %s\n", path1);
+                    break;
+                    }
+
+                res = f_read(&f2, (uint8_t *)&qbuf[32], 16, &br2);
+                if (res != FR_OK)
+                    {
+                    printf("Failed to read from file: %s\n", path2);
+                    break;
+                    }
+
+                // If both br1 and br2 are 0, we've reached the end of both files
+                if (br1 == 0 && br2 == 0)
+                    {
+                    printf("Files are identical\n");
+                    break;
+                    }
+
+                // If both br1 and br2 are 0, we've reached the end of both files
+                if (br1 != br2)
+                    {
+                    printf("Files have different length: %d %d\n", br1, br2);
+                    dump(&qbuf[0], 16);
+                    dump(&qbuf[32], 16);
+                    break;
+                    }
+
+
+                bool diff = false;
+                // Compare the chunks
+                for (unsigned i = 0; i < br1; i++)
+                    {
+                    if (qbuf[i] != qbuf[32+i])
+                        {
+                        // Found a difference
+                        diff = true;
+                        printf("Difference found at offset: %lu\n", offset + i);
+                        dump(&qbuf[0], 16);
+                        dump(&qbuf[32], 16);
+                        break;
+                        }
+                    }
+                if(diff)break;
+
+                // Update the offset
+                offset += br1;
+                }
+
+            // Close both files
+            f_close(&f1);
+            f_close(&f2);
+            }
+
 
 
 //              //                              //

@@ -12,10 +12,11 @@
 
 //-----[ SD Card SPI Interface Cfgs ]-----
 
-extern SPI_HandleTypeDef 	hspi1;
-#define HSPI_SDCARD 		&hspi1
-#define SD_CS_PORT 			SPI1_NSS_GPIO_Port
-#define SD_CS_PIN 			SPI1_NSS_Pin
+extern SPI_HandleTypeDef    hspi1;
+extern SPI_HandleTypeDef    hspi3;
+#define HSPI_SDCARD(drv) 	(drv==0?&hspi1:&hspi3)
+#define SD_CS_PORT(drv) 	(drv==0?SPI1_NSS_GPIO_Port:SPI3_NSS_GPIO_Port)
+#define SD_CS_PIN(drv) 		(drv==0?SPI1_NSS_Pin:SPI3_NSS_Pin)
 #define SPI_TIMEOUT 		100
 
 //-----[ MMC/SDC Commands ]-----
