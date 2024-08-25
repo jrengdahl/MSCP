@@ -7,14 +7,8 @@ module DFFR (
 
     always_ff @(posedge clk or posedge reset)
         begin
-        if (reset)
-            begin
-            Q <= 1'b0;   // Asynchronously reset Q to 0
-            end
-        else
-            begin
-            Q <= D;      // On clock edge, assign D to Q
-            end
+        if (reset) Q <= 1'b0;   // Asynchronously reset Q to 0
+        else       Q <= D;      // On clock edge, assign D to Q
         end
 
 endmodule
@@ -25,16 +19,10 @@ module SRFF (
     output logic Q       // Data output
 );
 
-    always_comb
+    always @*
         begin
-        if (reset)
-            begin
-            Q = 1'b0;   // Asynchronously reset Q to 0
-            end
-        else if (set)
-            begin
-            Q = 1'b1;   // Asynchronously set Q to 1
-            end
+        if (reset)    Q = 1'b0;   // Asynchronously reset Q to 0
+        else if (set) Q = 1'b1;   // Asynchronously set Q to 1
         end
 
 endmodule
@@ -106,7 +94,7 @@ module qbus (
     parameter [21:0] QADDR_IR = 22'o17772150;
     parameter [21:0] QADDR_SA = 22'o17772152;
 
-    
+    parameter [21:0] QADDR_ROM = 22'o17771000;      // this is the alternate boot ROM address, since 17773000 it taken by the KDJ11's on-board ROM
     
     // RQDX3 compatible registers
     logic [15:0] SA_Status;         // status read by PDP-11, written by H723
@@ -120,16 +108,16 @@ module qbus (
     
     
     // status bits set by PDP-11 activity, read by the H723
-    logic IR_Read;                  // IR register has been read by PDP-11 (poll queue)
-    logic IR_Written;               // IR register has been written by PDP-11 (init)
+    logic IP_Read;                  // IP register has been read by PDP-11 (poll queue)
+    logic IP_Written;               // IP register has been written by PDP-11 (init)
     logic SA_Read;                  // SA register has been read by PDP-11
     logic SA_Written;               // SA register has been written by PDP-11
     logic BRPLY_Asserted;           // BRPLYL has been asserted
     logic BRPLY_Deasserted;         // BRPLY has been deasserted
     
     // latched version of the above for read-and-clear
-    logic IR_ReadR;                 //
-    logic IR_WrittenR;              //
+    logic IP_ReadR;                 //
+    logic IP_WrittenR;              //
     logic SA_ReadR;                 //
     logic SA_WrittenR;              //
     logic BRPLY_AssertedR;          //
@@ -138,22 +126,34 @@ module qbus (
     // Both the Qbus and FMC bus have multiplexed address/data
     // these are the addresses latched during the address phase of a bbus cycle for both busses
     logic [23:0] Faddress;          // Latch for the FMC address
-    logic Q_IR_selected;            // latches whether the IR register is addressed by the Qbus
+    logic Q_IP_selected;            // latches whether the IR register is addressed by the Qbus
     logic Q_SA_selected;            // latches whether the SA register is addressed by the Qbus
-    logic Qaddress0;                // latches the low bit of the Qbus address
+    logic Q_ROM_selected;           // latches whether the SA register is addressed by the Qbus
+    logic [12:0] Qaddress;          // latches the low bits of the Qbus address
 
+    logic [15:0] ROMdata;           // data from the boot ROM
+    
     
     // interrupt the H723 if the PDP-11 has read or written any register
-    assign FPGA_IRQ = IR_Read || IR_Written || SA_Read || SA_Written;
+    assign FPGA_IRQ = IP_Read || IP_Written || SA_Read || SA_Written;
 
-    // IR is being read by H723
-    wire F_IR_read_enable = !NE1 && !NOE && Faddress[21:0] == FADDR_IR[21:0];
+    // IP is being read by H723
+    wire F_IP_read_enable = !NE1 && !NOE && Faddress[21:0] == FADDR_IR[21:0];
   
 
     assign BIAKOg = 0;
 
     assign PLL_RSTN = 1;            // the PLL needs this held high
     
+    
+    
+    // Instantiate the BootRom module
+    BootRom u_BootRom (
+        .addr(Qaddress[8:1]),           // Connect addr signal
+        .rdata_a(ROMdata[15:0]),        // Connect rdata_a signal
+        .clk(clock)                     // Connect clk signal
+    );
+
     
 ///////////////////////////////////////////
 ///
@@ -169,9 +169,16 @@ module qbus (
         end
 
     // FMC write
-    always_ff @(posedge NWE)
+    always_ff @(posedge NWE or posedge IP_Written)
         begin
-        if (!NE1 && Faddress[21:1] == FADDR_SA[21:1])
+        if(IP_Written)
+            begin
+                SA_Status <= 0;
+                Q_Ctl <= 0;
+                Q_Addr <= 0;
+                Q_Data_out <= 0;
+            end
+        else if (!NE1 && Faddress[21:1] == FADDR_SA[21:1])
             begin
             if (!NBL0) SA_Status[7:0]  <= DA_IN[7:0];   // Byte 0 write
             if (!NBL1) SA_Status[15:8] <= DA_IN[15:8];  // Byte 1 write
@@ -201,8 +208,8 @@ module qbus (
     
     always_ff @(posedge NL) // latch the status bits at the beginning of any cycle
         begin
-        IR_ReadR <= IR_Read;
-        IR_WrittenR <= IR_Written;
+        IP_ReadR <= IP_Read;
+        IP_WrittenR <= IP_Written;
         SA_ReadR <= SA_Read;
         SA_WrittenR <= SA_Written;
         BRPLY_AssertedR <= BRPLY_Asserted;
@@ -227,8 +234,8 @@ module qbus (
                         ~BRPLYf,
                         SA_WrittenR,
                         SA_ReadR, 
-                        IR_WrittenR, 
-                        IR_ReadR};
+                        IP_WrittenR, 
+                        IP_ReadR};
                 end
             else if(Faddress[21:1] == FADDR_SA[21:1])
                 begin
@@ -268,49 +275,51 @@ module qbus (
         begin
         if(!BINITf)
             begin
-            Q_IR_selected <= 0;
-            Q_SA_selected <= 0;
-            Qaddress0 <= 0;
+            Q_IP_selected   <= 0;
+            Q_SA_selected   <= 0;
+            Q_ROM_selected  <= 0;
+            Qaddress        <= 0;
             end
         else
             begin
-            Q_IR_selected <= !BBS7f && ~BDALf_IN[12:1] == QADDR_IR[12:1];
-            Q_SA_selected <= !BBS7f && ~BDALf_IN[12:1] == QADDR_SA[12:1];
-            Qaddress0 <= ~BDALf_IN[0];
+            Q_IP_selected  <= !BBS7f && ~BDALf_IN[12:1] == QADDR_IR[12:1];
+            Q_SA_selected  <= !BBS7f && ~BDALf_IN[12:1] == QADDR_SA[12:1];
+            Q_ROM_selected <= !BBS7f && ~BDALf_IN[12:9] == QADDR_ROM[12:9];
+            Qaddress       <=           ~BDALf_IN[12:0];
             end
         end
 
     // QBus write
-    always_ff @(posedge BDOUTf or posedge F_IR_read_enable)
+    always_ff @(posedge BDOUTf or posedge F_IP_read_enable)
         begin
-        if (F_IR_read_enable)
+        if (F_IP_read_enable)
             begin
-            IR_Written <= 0;
+            IP_Written <= 0;
             SA_Written <= 0;
             end
-        else if (Q_IR_selected)
+        else if (Q_IP_selected)
             begin
-            IR_Written <= 1;
+            IP_Written <= 1;
             end
         else if (Q_SA_selected)
             begin
-            if (BWTBTf || Qaddress0 == 0) SA_Address[7:0]  <= ~BDALf_IN[7:0];   // Byte 0 write
-            if (BWTBTf || Qaddress0 == 1) SA_Address[15:8] <= ~BDALf_IN[15:8];  // Byte 1 write
+            if (BWTBTf || Qaddress[0] == 0) SA_Address[7:0]  <= ~BDALf_IN[7:0];   // Byte 0 write
+            if (BWTBTf || Qaddress[0] == 1) SA_Address[15:8] <= ~BDALf_IN[15:8];  // Byte 1 write
             SA_Written <= 1;
             end
         end
 
     // QBus read, clocked part
-    always_ff @(posedge BDINf or posedge F_IR_read_enable)
+    always_ff @(posedge BDINf or posedge F_IP_read_enable)
         begin
-        if (F_IR_read_enable)
+        if (F_IP_read_enable)
             begin
-            IR_Read <= 0;
+            IP_Read <= 0;
             SA_Read <= 0;
             end
-        else if (Q_IR_selected)
+        else if (Q_IP_selected)
             begin
-            IR_Read <= 1;
+            IP_Read <= 1;
             end
         else if (Q_SA_selected)
             begin
@@ -321,6 +330,16 @@ module qbus (
 
     wire Q_Addr_enable = Q_Ctl[10];
     wire Q_Data_enable = Q_Ctl[11];
+    wire OutGateBegin = !BDINf && !BRPLYf;
+    logic OutGate;                         // used to enable slave outputs to Qbus
+    
+    // OutGate begins at BDIN low and ends and BRPLY high
+    always_ff @(posedge BRPLYf or posedge OutGateBegin)
+        begin
+        if(OutGateBegin)  OutGate <= 1;
+        else              OutGate <= 0;
+        end
+
     
     // This section handles data transmitted on qbus by this module
     // whether the module as a slave is read by the PDP-11,
@@ -357,30 +376,41 @@ module qbus (
 
         // transactions performed as bus slave
         // Qbus read of IR register
-        else if (Q_IR_selected && !BDINf)
+        else if (Q_IP_selected && OutGate)
             begin
-            BDALf_OE = 22'h3FFFFF;                      // enable the FPGA bus drivers to output the data
-            Outbound = 1;                               // enable the gate drivers
+            BDALf_OE = 22'h3FFFFF;                          // enable the FPGA bus drivers to output the data
+            Outbound = 1;                                   // enable the gate drivers
             end
             
         // Qbus read of SA register
-        else if (Q_SA_selected && !BDINf)
+        else if (Q_SA_selected && OutGate)
             begin
             BDALf_OUT[21:18] = 4'b0000;
-            BDALf_OUT[17] = 0;                          // memory parity error enable
-            BDALf_OUT[16] = 0;                          // memory parity error
-            BDALf_OUT[15:0] = SA_Status;                // Drive the BDALf bus with register data
-            BDALf_OE = 22'h3FFFFF;                      // enable the FPGA bus drivers to output the data
-            Outbound = 1;                               // enable the gate drivers
+            BDALf_OUT[17] = 0;                              // memory parity error enable
+            BDALf_OUT[16] = 0;                              // memory parity error
+            BDALf_OUT[15:0] = SA_Status;                    // Drive the BDALf bus with register data
+            BDALf_OE = 22'h3FFFFF;                          // enable the FPGA bus drivers to output the data
+            Outbound = 1;                                   // enable the gate drivers
+            end
+            
+        // Qbus read of boot ROM
+        else if (Q_ROM_selected && OutGate)
+            begin
+            BDALf_OUT[21:18] = 4'b0000;
+            BDALf_OUT[17] = 0;                              // memory parity error enable
+            BDALf_OUT[16] = 0;                              // memory parity error
+            BDALf_OUT[15:0] = ROMdata[15:0];                // Drive the BDALf bus with boot ROM data
+            BDALf_OE = 22'h3FFFFF;                          // enable the FPGA bus drivers to output the data
+            Outbound = 1;                                   // enable the gate drivers
             end
             
         end          
 
         
     // assert BRPLY as needed
-    assign BRPLYg = !BSACKg && (Q_IR_selected || Q_SA_selected) && (!BDINf || !BDOUTf);
+    assign BRPLYg = !BSACKg && (Q_IP_selected || Q_SA_selected || Q_ROM_selected) && (!BDINf || !BDOUTf);
 
-
+    
     
 ///////////////////////////////////////////
 ///
@@ -403,16 +433,16 @@ module qbus (
 
     
     // Detect assertion of BRPLYL
-    always_ff @(negedge BRPLYf or posedge F_IR_read_enable)
+    always_ff @(negedge BRPLYf or posedge F_IP_read_enable)
         begin
-        if (F_IR_read_enable)   BRPLY_Asserted <= 0;
+        if (F_IP_read_enable)   BRPLY_Asserted <= 0;
         else                    BRPLY_Asserted <= 1;
         end
 
     // Detect deassertion of BRPLYL
-    always_ff @(posedge BRPLYf or posedge F_IR_read_enable)
+    always_ff @(posedge BRPLYf or posedge F_IP_read_enable)
         begin
-        if (F_IR_read_enable)   BRPLY_Deasserted <= 0;
+        if (F_IP_read_enable)   BRPLY_Deasserted <= 0;
         else                    BRPLY_Deasserted <= 1;
         end
 

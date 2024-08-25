@@ -1,11 +1,10 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <omp.h>
+#include "main.h"
 #include "cmsis.h"
 #include "context.hpp"
 #include "Port.hpp"
-#include "main.h"
-#include "stm32h7xx_hal.h"
 #include "adc.h"
 #include "tim.h"
 

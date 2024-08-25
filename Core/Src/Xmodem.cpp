@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
+#include "main.h"
 #include "serial.h"  // Your serial communication functions
 #include "QSPI.h"    // Your QSPI interface functions
 

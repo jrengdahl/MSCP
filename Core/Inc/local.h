@@ -19,12 +19,20 @@ extern void skip(char **p);
 
 #define izdigit(p) (*p=='o' || ('0'<=*p&&*p<='9') || ('a'<=*p&&*p<='a') || ('A'<=*p&&*p<='A'))
 
-extern "C" void trigon();
-extern "C" void trigoff();
-
 #define fflush(x)
 
-extern "C" void memcpy32(uint32_t *dst, uint32_t *src, uint32_t size);
+#if __cplusplus
+extern "C" {
+#endif
+
+//void trigon();
+//void trigoff();
+void memcpy32(uint32_t *dst, uint32_t *src, uint32_t size);
+
+#if __cplusplus
+    }
+#endif
+
 
 #endif
 

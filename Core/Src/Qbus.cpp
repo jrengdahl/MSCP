@@ -1,10 +1,12 @@
+// Routines to access Qbus using registers in the FPGA
+
+
 #include <stdint.h>
 #include <stdio.h>
+#include "main.h"
 #include "cmsis.h"
 #include "local.h"
-#include "bogodelay.hpp"
 #include "cyccnt.hpp"
-#include "main.h"
 #include "Qbus.hpp"
 
 #define FMC_WRITE_TIME 60                       // minimum FMC write cycle time
@@ -20,73 +22,7 @@
 #define Q_DMA_TURN 250                          // delay from BSACK asserted to BSYNC asserted by DMA master
 #define Q_DMA_HOLDOFF 4000                      // min delay from BSACK deasserted to next assertion of BDMR
 
-union Q_Sts
-    {
-    struct
-        {
-        unsigned short IR_Read            : 1;
-        unsigned short IR_Written         : 1;
-        unsigned short SA_Read            : 1;
-        unsigned short SA_Written         : 1;
-        unsigned short BRPLY              : 1;
-        unsigned short BRPLY_Asserted     : 1;
-        unsigned short BRPLY_Deasserted   : 1;
-        unsigned short BSACK              : 1;
-        unsigned short                    : 8;
-        };
-    uint16_t value;
-    };
 
-struct Q_Ctl
-    {
-    union
-        {
-        struct
-            {
-            unsigned BSYNC              : 1;
-            unsigned BDIN               : 1;
-            unsigned BDOUT              : 1;
-            unsigned BWTBT              : 1;
-            unsigned BDMR               : 1;
-            unsigned BREF               : 1;
-            unsigned BBS7               : 1;
-            unsigned BIRQ4              : 1;
-            unsigned BIRQ5              : 1;
-            unsigned BIRQ6              : 1;
-            unsigned Q_Addr_enable      : 1;
-            unsigned Q_Data_enable      : 1;
-            unsigned                    : 3; // Padding to make it a full 16-bit struct
-            unsigned DMA_done           : 1;
-            };
-        uint16_t value; // This represents the whole struct as a single 16-bit value
-        };
-
-    __IGNORE_WARNING("-Weffc++");                       // suppress warning: 'operator=' should return a reference to '*this' [-Weffc++]
-
-    __FORCEINLINE void operator=(const Q_Ctl& other)
-        {
-        value = other.value; // Directly assign the 16-bit value
-        }
-
-    __FORCEINLINE void operator=(const Q_Ctl& other) volatile
-        {
-        value = other.value; // Directly assign the 16-bit value
-        }
-
-    __UNIGNORE_WARNING("-Weffc++");
-
-    };
-
-
-// define addresses of registers in the FPGA
-#define QBASE 0x60000000
-#define FADDR_ST        (*(uint16_t volatile *)(QBASE + 0))
-#define FADDR_SA        (*(uint16_t volatile *)(QBASE + 2))
-#define FADDR_CT        (*(uint16_t volatile *)(QBASE + 4))
-#define FADDR_LO        (*(uint16_t volatile *)(QBASE + 6))
-#define FADDR_HI        (*(uint16_t volatile *)(QBASE + 8))
-#define FADDR_DATA_OUT  (*(uint16_t volatile *)(QBASE + 10))
-#define FADDR_DATA_IN   (*(uint16_t volatile *)(QBASE + 12))
 
 
 static Q_Ctl Ctl = {};                                      // CTL struct
@@ -210,4 +146,45 @@ void Qwrite(uint32_t addr, uint16_t data)
     DEASSERT(BSYNC);
     }
 
+void QReadBlock(uint32_t addr, uint16_t *buffer, int size)
+    {
+    QDMAbegin();
+    for(int i=0; i<size; i++)
+        {
+        buffer[i] = Qread(addr+i*2);
+        if((i&7)==7 && i<size)
+            {
+            QDMAend();
+            QDMAbegin();
+            }
+        }
+    QDMAend();
+    }
+
+void QWriteBlock(uint32_t addr, uint16_t *buffer, int size)
+    {
+    QDMAbegin();
+    for(int i=0; i<size; i++)
+        {
+        Qwrite(addr+i*2, buffer[i]);
+        if((i&7)==7 && i<size)
+            {
+            QDMAend();
+            QDMAbegin();
+            }
+        }
+    QDMAend();
+    }
+
+
+
+uint16_t vector = 0;
+
+void Qinterrupt()
+    {
+    if(vector)
+        {
+
+        }
+    }
 

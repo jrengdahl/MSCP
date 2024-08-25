@@ -6,7 +6,7 @@
 
 #include "Fifo.hpp"
 
-extern bool ControlC;
+extern volatile bool ControlC;
 extern bool SerialRaw;
 extern FIFO<char, 64> ConsoleFifo;
 extern bool PollRx();

@@ -4,20 +4,20 @@
 // BSD license -- see the accompanying LICENSE file
 
 
-#include <context.hpp>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <ContextFIFO.hpp>
 #include <math.h>
-#include "cmsis.h"
 #include "local.h"
+#include "main.h"
+#include "cmsis.h"
 #include "bogodelay.hpp"
 #include "serial.h"
 #include "random.hpp"
 #include "cyccnt.hpp"
-#include "main.h"
 #include "boundaries.h"
+#include "context.hpp"
+#include "ContextFIFO.hpp"
 #include "libgomp.hpp"
 #include "omp.h"
 #include "tim.h"
@@ -1316,6 +1316,7 @@ void interp()
                     else printf("%04x\n", values[i]);                // print the result
                     }
                 }
+
             else if(p[0] == 'w' && p[1]=='w')
                 {
                 uint16_t values[8];
@@ -1334,7 +1335,7 @@ void interp()
                 uint32_t addr = gethex(&p);             // get the address
                 skip(&p);
 
-                while(isxdigit(*p) && count <8)
+                while((isxdigit(*p) || *p=='o') && count <8)
                     {
                     values[count++] = gethex(&p);            // get the data
                     skip(&p);
@@ -1349,6 +1350,12 @@ void interp()
                         }
                     QDMAend();
                     }
+                }
+
+            else if(p[0] == 'i')
+                {
+                extern void Qinit();
+                Qinit();
                 }
             }
 

@@ -1,0 +1,268 @@
+Later PDP-11 hard drive systems use MSCP (Mass Storage Control Protocol)
+to communicate between the processor and the drive controllers. This is
+documented in  "MSCP Basic Disk Functions Manual AA-L619A-TK". This
+document only describes the upper layer of the MSCP protocol. The lower
+layer, used to initialize the channel and carry MSCP packets between the
+host and controller, is described by UQSSP (Unibus/Qbus Storage Systems
+Protocol). The UQSSP protocol document is unavailable. This document
+attempts to reconstruct the basics of this protocol by examining the
+source code which implements the protocol. The following sources were used:
+
+-- RQDX3 firmware, found at
+   http://bitsavers.trailing-edge.com/pdf/dec/qbus/rqdxx/rqdx3_src.zip
+
+-- 2.11BSD driver, ra.c (both standalone and full version)
+
+-- SIMH MSCP emulation, pdp11_r1.c, pdp11_uqssp.c
+
+A PDP-11 MSCP drive controller has two register addresses. The default
+addresses are:
+
+17772150    IP (interrupt and poll) register
+17772152    SA (status and address register)
+
+When the host (PDP-11) writes to the IP register it starts the
+controller's initialization sequence. When the host reads from the IP
+register it tells the controller to poll the communication queues. No
+data is transferred on IP reads or writes -- whatever is written is
+ignored by the controller.
+
+The SA register actually consists of two registers at the same address:
+one is written by the host and read by the controller, the other is
+written by the controller and read by the host.
+
+Writing the IP register resets the controller and starts the
+initialization sequence, which proceeds as follows:
+
+
+PDP-11: write any data to the IP register to start initialization.
+
+STEP 1:
+
+The controller writes the following word to the SA register:
+
+bit 15:     error           0   an error has occurred (?)
+bit 14:     step 4          0
+bit 13:     step 3          0
+bit 12:     step 2          0
+bit 11:     step 1          1   the handshake is in step 1
+bit 10:     NV              0   fixed vector
+bit 9:      Q22             1   indicates that the Qbus is 22 bits
+bit 8:      DI              1   ext diags
+bit 7:      OD              0   odd address   
+bit 6:      MP              1   mapping
+bit 5:      SM              0   spec fncs
+bit 4:      CN              0   node name
+bit 3:                      0
+bit 2:                      0
+bit 1:                      0
+bit 0:                      0
+
+The host responds by writing the following word (s1) to the SA register:
+
+bit 15:     valid           1   
+bit 14:     wrap            x   1 = execute SA register loopback test
+bit 13-11                   log base 2 of command ring size (1, 2, 4, ... 128)
+bit 10-8                    log base 2 of reply ring size (1, 2, 4, ... 128)
+bit 7       IE              X   interrupt enable for step 2-4
+bit 6-0:                    the interrupt vector divided by 4
+
+If the wrap bit (14) is set, the controller enters an endless loop which
+reads the SA register and writes it back. (This may be private
+RXDX3-specific diagnostic behavior, and not part of the protocol.)
+
+If the IE bit (7) s=is set and the vector is not zero, then the
+controller generates an interrupt to the host after it writes a new
+value to the SA register in steps 2-4.
+
+STEP 2:
+
+The controller writes the following word (s2) to the SA register:
+
+bit 15:     error           0
+bit 14:     step 4          0
+bit 13:     step 3          0
+bit 12:     step 2          1   the handshake is in step 2
+bit 11:     step 1          0   
+bit 10-8:   ptk             0   the use of this field is unknown, and
+                                is always set to 0 by the RQDX3. It is
+                                described as "port type" in SIMH comments.
+
+bit 7-0:                    X   the 8 upper bits of the first value (s1)
+                                written by the host are returned in the
+                                lower 8 bits of this word. This may be an
+                                RXDX3 specific diagnostic function.
+
+The host responds by writing the following word to the SA register:
+
+bit 15:1                    X   The low word of the address of the response FIFO.
+                                Bit zero is assumed to be zero.
+bit 0:      PI              X   If PI==1 the communication area includes a purge flag.
+
+
+STEP 3:
+
+The controller writes the following (s3) word to the SA register:
+
+bit 15:     error           0
+bit 14:     step 4          0
+bit 13:     step 3          1   the handshake is in step 3
+bit 12:     step 2          0
+bit 11:     step 1          0   
+bit 10-8:                   0
+
+bit 7-0:                    X   the upper bits of the first value (s1)
+                                written by the host are returned in the
+                                lower 8 bits of this word.
+
+
+The host responds by writing the following word to the SA register:
+
+bit 15      PP              0   self-test
+bit 14-0                        The upper 15 bits of the address of the response FIFO.
+
+If the PP bit (15) is set the controller enters a self-test loop where
+it writes zeros to the SA register then reads the SA register. If the
+value read from the SA register is ever non-zero the test fails. It is
+unclear whether this loop is endless or has an exit.
+
+
+STEP 4:
+
+Before continuing the controller will perform a memory test on the communication area, and zeros it out.
+
+The controller then writes the following word to the SA register:
+
+bit 15:     error           0
+bit 14:     step 4          1   the handshake is in step 4
+bit 13:     step 3          0
+bit 12:     step 2          0
+bit 11:     step 1          0   
+bit 10:4    model           19  this appears to be the RQDX3 product ID, which is 19             
+bit 3:0     mvk             2   not sure what this is, but for the RQDX3 it has a constant value of "softv" which is 2
+
+The host responds by writing the following word (s4) to the SA register:
+
+bit 15-2                    0   don't care
+bit 1       lf              x   If set and port_error is nonzero, the controller transmits an error packet to the host.
+                                It is unclear where port_error is set.
+bit 0       go              1   The controller loops until the host writes a word to SA that has this bit set.
+
+
+COMPLETE:
+
+At this point the initialization handshake is complete, and the
+controller goes online.
+
+Thereafter, the SA register will be written by the controller, with the
+error bit set and an error code, if the controller faults. If interrupts
+were enabled by setting IE and providing a vector, the controller will
+interrupt the host when it faults and writes the SA register..
+
+
+
+The address passed to the controller indicates the address of the communication data area:
+
+<----------- 16 bits ----------->
++-------------------------------+
+|            unused?            |  <-- optional if s2 bit 0 is set
++-------------------------------+
+|          purge flag           |  <-- optional if s2 bit 0 is set (unused by rqdx3?)
++-------------------------------+
+|           cmd flag            |  <-- command queue transition interrupt flag
++-------------------------------+
+|           rsp flag            |  <-- response queue transition interrupt flag
++-------------------------------+
+|                               |  <-- comm area address given by init points to this word
+|           response            |
+~             FIFO              ~  The content of the response FIFO are descriptors
+|                               |  of response messages. Descriptors are four bytes each.
+|                               |
++-------------------------------+
+|                               |
+|           command             |
+~             FIFO              ~  The content of the command FIFO are descriptors
+|                               |  of command messages.
+|                               |
++-------------------------------+
+
+
+The cmd and rsp one word flags are written to 1 when the corresponding
+FIFO changes from the full to not-full state (cmd) or empty to not-empty
+state (rsp).
+
+
+The FIFO (aka ring) contains descriptors. A descriptor appears as
+follows:
+
+<----------- 16 bits ----------->
++-------------------------------+
+|          low address          |
++-+-+---------------+-----------+
+|O|F|0 0 0 0 0 0 0 0|  hi addr  |
++-+-+---------------+-----------+
+
+The address is assumed to be 2-byte aligned (the low bit is zero).
+
+O is the owner flag. A 1 indicates that the descriptor belongs to the
+controller.
+
+For the command queue owner == 1 indicates that the controller should
+copy the packet pointed to by the descriptor. Once a copy has been made
+of the packet the owner bit is cleared to return the descriptor to the
+host for reuse.
+
+For the reply queue, owner == 1 indicates that the descriptor is unused
+and is available to receive a reply packet for the host. When the
+packet pointed to by the descriptor is filled by the controller, the
+owner bit is cleared to indicate to the hots that a reply can be
+processed.
+
+F is the interrupt enable flag.
+
+If a descriptor in the command queue is updated by the controller,
+clearing the owner bit to return it to the host, and the previous
+descriptor is owned by the controller (or the FIFO length is 1),
+this action will transition the
+command queue from the full to the not-full state. If the descriptor's F
+bit is set an interrupt to the host will be triggered.
+
+If a descriptor in the reply queue is updated by the controller,
+clearing the owner bit to pass a reply to the host, and the previous
+descriptor is owned by the controller (or the FIFO length is 1),
+this action will transition the
+reply queue from the empty to the not-empty state. If the descriptor's F
+bit is set an interrupt to the host will be triggered.
+
+Note that when clearing the owner bit, only the upper word of the
+descriptor needs to be written to the host, since the controller will not
+have changed the address in the descriptor.
+
+
+MSCP packet
+
+For the RQDX3 64 bytes are always transferred for a command packet.
+
+<----------- 16 bits ----------->
++-------------------------------+
+|             msglen            |
++---------------+-------+-------+      These two words are the UQSSP header (?).
+|     vcid      |msgtype|credits|
++---------------+-------+-------+
+
+
+<----------- 32 bits ----------->
++---------------+-------+-------+
+|            cmdref             |  <-- The address in the descriptor points to this word
++-------------------------------+      since this is the MSCP payload.
+|            filler             |
++---------------+---------------+
+|     flags     |    opcode     |
++---------------+---------------+
+|                               |
++-------------------------------+
+~                               ~
++-------------------------------+
+|                               |
++-------------------------------+
+

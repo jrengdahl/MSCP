@@ -10,11 +10,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <omp.h>
+#include "main.h"
 #include "context.hpp"
 #include "Port.hpp"
 #include "ContextFIFO.hpp"
 #include "serial.h"
-#include "main.h"
 #include "usbd_cdc_if.h"
 #include "cyccnt.hpp"
 #include "libgomp.hpp"

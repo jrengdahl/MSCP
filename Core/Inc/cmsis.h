@@ -25,14 +25,16 @@ inline bool COMPILER_BARRIER()
 #define __OPTIMIZE(n) __attribute__((__optimize__(n)))
 #define __FLATTEN __attribute__((__flatten__))
 #define __NAKED __attribute__((__naked__))
+
 #ifndef __NOINLINE
-#define __NOINLINE __attribute__ ( (noinline) )
+#define __NOINLINE __attribute__ ((noinline))
 #endif
 
 #define __LENGTH(x) (sizeof(x)/sizeof(x[0]))
 
 #define __XSTRINGIFY(s) #s
 #define __STRINGIFY(s) __XSTRINGIFY(s)
+
 
 #define __IGNORE_WARNING(x)                         \
     _Pragma("GCC diagnostic push")                  \

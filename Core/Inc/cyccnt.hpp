@@ -5,6 +5,7 @@
 #define CYCCNT_HPP
 
 #include <stdint.h>
+#include "cmsis.h"
 
 #define xDWT_CONTROL (*(uint32_t volatile *)0xE0001000)
 #define xCYCCNT (*(uint32_t volatile *)0xE0001004)

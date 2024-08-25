@@ -3,12 +3,12 @@
         {
             "name": "la0",
             "type": "la",
-            "uuid": "120010f8034e4f77b48d30c2901cae2d",
+            "uuid": "85764978e566481e9ff7e6324ce70060",
             "trigin_en": false,
             "trigout_en": false,
             "auto_inserted": true,
             "capture_control": true,
-            "data_depth": 4096,
+            "data_depth": 512,
             "input_pipeline": 1,
             "probes": [
                 {
@@ -33,11 +33,6 @@
                 },
                 {
                     "name": "Outbound",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
-                    "name": "FPGA_IRQ",
                     "width": 1,
                     "probe_type": 1
                 },
@@ -67,11 +62,6 @@
                     "probe_type": 1
                 },
                 {
-                    "name": "BDMGOg",
-                    "width": 1,
-                    "probe_type": 1
-                },
-                {
                     "name": "BSACKg",
                     "width": 1,
                     "probe_type": 1
@@ -83,6 +73,36 @@
                 },
                 {
                     "name": "DMA_done",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "Q_SA_selected",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "Q_ROM_selected",
+                    "width": 1,
+                    "probe_type": 1
+                },
+                {
+                    "name": "SA_Status",
+                    "width": 16,
+                    "probe_type": 1
+                },
+                {
+                    "name": "SA_Address",
+                    "width": 16,
+                    "probe_type": 1
+                },
+                {
+                    "name": "BDALf_IN",
+                    "width": 22,
+                    "probe_type": 1
+                },
+                {
+                    "name": "OutGate",
                     "width": 1,
                     "probe_type": 1
                 }
@@ -242,52 +262,327 @@
                     },
                     {
                         "name": "la0_probe5",
-                        "net": "FPGA_IRQ",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe6",
                         "net": "NE1",
                         "path": []
                     },
                     {
-                        "name": "la0_probe7",
+                        "name": "la0_probe6",
                         "net": "NOE",
                         "path": []
                     },
                     {
-                        "name": "la0_probe8",
+                        "name": "la0_probe7",
                         "net": "NWE",
                         "path": []
                     },
                     {
-                        "name": "la0_probe9",
+                        "name": "la0_probe8",
                         "net": "BDMRg",
                         "path": []
                     },
                     {
-                        "name": "la0_probe10",
+                        "name": "la0_probe9",
                         "net": "BDMGIf",
                         "path": []
                     },
                     {
-                        "name": "la0_probe11",
-                        "net": "BDMGOg",
-                        "path": []
-                    },
-                    {
-                        "name": "la0_probe12",
+                        "name": "la0_probe10",
                         "net": "BSACKg",
                         "path": []
                     },
                     {
-                        "name": "la0_probe13",
+                        "name": "la0_probe11",
                         "net": "DMA_grant",
                         "path": []
                     },
                     {
-                        "name": "la0_probe14",
+                        "name": "la0_probe12",
                         "net": "DMA_done",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe13",
+                        "net": "Q_SA_selected",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe14",
+                        "net": "Q_ROM_selected",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[0]",
+                        "net": "SA_Status[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[1]",
+                        "net": "SA_Status[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[2]",
+                        "net": "SA_Status[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[3]",
+                        "net": "SA_Status[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[4]",
+                        "net": "SA_Status[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[5]",
+                        "net": "SA_Status[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[6]",
+                        "net": "SA_Status[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[7]",
+                        "net": "SA_Status[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[8]",
+                        "net": "SA_Status[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[9]",
+                        "net": "SA_Status[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[10]",
+                        "net": "SA_Status[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[11]",
+                        "net": "SA_Status[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[12]",
+                        "net": "SA_Status[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[13]",
+                        "net": "SA_Status[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[14]",
+                        "net": "SA_Status[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe15[15]",
+                        "net": "SA_Status[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[0]",
+                        "net": "SA_Address[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[1]",
+                        "net": "SA_Address[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[2]",
+                        "net": "SA_Address[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[3]",
+                        "net": "SA_Address[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[4]",
+                        "net": "SA_Address[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[5]",
+                        "net": "SA_Address[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[6]",
+                        "net": "SA_Address[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[7]",
+                        "net": "SA_Address[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[8]",
+                        "net": "SA_Address[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[9]",
+                        "net": "SA_Address[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[10]",
+                        "net": "SA_Address[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[11]",
+                        "net": "SA_Address[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[12]",
+                        "net": "SA_Address[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[13]",
+                        "net": "SA_Address[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[14]",
+                        "net": "SA_Address[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe16[15]",
+                        "net": "SA_Address[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[0]",
+                        "net": "BDALf_IN[0]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[1]",
+                        "net": "BDALf_IN[1]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[2]",
+                        "net": "BDALf_IN[2]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[3]",
+                        "net": "BDALf_IN[3]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[4]",
+                        "net": "BDALf_IN[4]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[5]",
+                        "net": "BDALf_IN[5]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[6]",
+                        "net": "BDALf_IN[6]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[7]",
+                        "net": "BDALf_IN[7]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[8]",
+                        "net": "BDALf_IN[8]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[9]",
+                        "net": "BDALf_IN[9]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[10]",
+                        "net": "BDALf_IN[10]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[11]",
+                        "net": "BDALf_IN[11]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[12]",
+                        "net": "BDALf_IN[12]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[13]",
+                        "net": "BDALf_IN[13]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[14]",
+                        "net": "BDALf_IN[14]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[15]",
+                        "net": "BDALf_IN[15]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[16]",
+                        "net": "BDALf_IN[16]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[17]",
+                        "net": "BDALf_IN[17]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[18]",
+                        "net": "BDALf_IN[18]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[19]",
+                        "net": "BDALf_IN[19]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[20]",
+                        "net": "BDALf_IN[20]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe17[21]",
+                        "net": "BDALf_IN[21]",
+                        "path": []
+                    },
+                    {
+                        "name": "la0_probe18",
+                        "net": "OutGate",
                         "path": []
                     }
                 ]
@@ -302,7 +597,7 @@
     ],
     "session": {
         "wizard": {
-            "data_depth": 4096,
+            "data_depth": 512,
             "capture_control": true,
             "selected_nets": [
                 {
@@ -339,14 +634,6 @@
                 },
                 {
                     "name": "Outbound",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
-                    "name": "FPGA_IRQ",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",
@@ -394,14 +681,6 @@
                     "path": []
                 },
                 {
-                    "name": "BDMGOg",
-                    "width": 1,
-                    "clk_domain": "clock",
-                    "selected_probe_type": "DATA AND TRIGGER",
-                    "child": [],
-                    "path": []
-                },
-                {
                     "name": "BSACKg",
                     "width": 1,
                     "clk_domain": "clock",
@@ -419,6 +698,60 @@
                 },
                 {
                     "name": "DMA_done",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "Q_SA_selected",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "Q_ROM_selected",
+                    "width": 1,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": []
+                },
+                {
+                    "name": "SA_Status",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "SA_Address",
+                    "width": 16,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 15,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "BDALf_IN",
+                    "width": 22,
+                    "clk_domain": "clock",
+                    "selected_probe_type": "DATA AND TRIGGER",
+                    "child": [],
+                    "path": [],
+                    "net_idx_left": 21,
+                    "net_idx_right": 0
+                },
+                {
+                    "name": "OutGate",
                     "width": 1,
                     "clk_domain": "clock",
                     "selected_probe_type": "DATA AND TRIGGER",
