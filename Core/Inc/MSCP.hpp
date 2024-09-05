@@ -7,6 +7,14 @@ typedef short word;
 typedef unsigned short uword;
 typedef unsigned char byte;
 
+/* Misc constants */
+
+#define UID_DISK        2                               /* disk class */
+#define UID_RA92       29                               /* a 1.5 GB DU disk */
+#define DU_SD32        0x25664040                       /* media ID for DU and SD32 (32 gig SD card) */
+#define DU_SD16        0x25664020                       /* media ID for DU and SD16 (16 gig SD card) */
+
+
 /* Opcodes */
 
 #define OP_ABO          1                               /* b: abort */
@@ -30,6 +38,18 @@ typedef unsigned char byte;
 #define OP_FMT          47                              /* d: format */
 #define OP_AVA          64                              /* b: unit now avail */
 #define OP_END          0x80                            /* b: end flag */
+
+/* Unit flags */
+
+#define UF_RPL          0x8000                          /* d: ctrl bad blk repl */
+#define UF_WPH          0x2000                          /* b: wr prot hwre */
+#define UF_WPS          0x1000                          /* b: wr prot swre */
+#define UF_EXA          0x0400                          /* b: exclusive NI */
+#define UF_WPD          0x0100                          /* b: wr prot data NI */
+#define UF_RMV          0x0080                          /* d: removable */
+#define UF_CMW          0x0002                          /* cmp writes NI */
+#define UF_CMR          0x0001                          /* cmp reads NI */
+
 
 /* Status codes */
 
@@ -120,13 +140,10 @@ struct command
         struct
             {
             long        bytecount;
-            struct
-                {
-                long    buffer_address;
-                long                : 32;
-                long                : 32;
-                };
-            long LBN;
+            long        buffer_address;
+            long                : 32;
+            long                : 32;
+            long        LBN;
             };
         };
     };
@@ -157,32 +174,25 @@ struct response
             {
             word        multiunit_code;
             word        unit_flags;
+            byte        spndles;
+            long                    : 24;
 
-            struct
-                {
-                byte spndles;
-                long                : 24;
-                };
-
-            struct unit_identifier id;
+            struct unit_identifier id;                  // (8 bytes)
             long        media_type_identifier;
             long                    : 32;
-            struct
-                {
-                uword lo;
-                word hi;
-                }unit_size;                      // size in LBNs
+            long        unit_size;               // size in LBNs
             long        volume_serial_number;    // optional, often zero
             };
 
         // read parameters
         struct
             {
-            long                    : 32;
+            long                    : 32;   // (byte count)
+            long                    : 32;   // (descriptor)
             long                    : 32;
             long                    : 32;
 
-            long        first_bad_LBN;
+            long        first_bad_LBN;      // first bad block
             };
         };
     };
@@ -198,6 +208,7 @@ struct FIFOctl
     };
 
 
+extern void MSCP_poll();
 
 
 #endif // MSCP_H

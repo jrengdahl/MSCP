@@ -133,7 +133,7 @@ module qbus (
 
     logic [15:0] ROMdata;           // data from the boot ROM
     
-    
+
     // interrupt the H723 if the PDP-11 has read or written any register
     assign FPGA_IRQ = IP_Read || IP_Written || SA_Read || SA_Written;
 
@@ -270,6 +270,8 @@ module qbus (
 ///
 ///////////////////////////////////////////
 
+    wire Clear_SA = Q_Ctl[12];
+
     // Capture QBus address and related info at leading edge of BSYNC
     always_ff @(negedge BSYNCf or negedge BINITf)
         begin
@@ -296,6 +298,10 @@ module qbus (
             begin
             IP_Written <= 0;
             SA_Written <= 0;
+            if(Clear_SA)
+                begin
+                SA_Address <= 0;
+                end
             end
         else if (Q_IP_selected)
             begin
@@ -420,16 +426,16 @@ module qbus (
 
 
     // the Q_Ctl register enables the H723 to control the bus master outputs
-    assign BSYNCg = Q_Ctl[0];
-    assign BDINg  = Q_Ctl[1];
-    assign BDOUTg = Q_Ctl[2];
-    assign BWTBTg = Q_Ctl[3];
-    assign BDMRg  = Q_Ctl[4];
-    assign BREFg  = Q_Ctl[5];
-    assign BBS7g  = Q_Ctl[6];
-    assign BIRQ4g = Q_Ctl[7];
-    assign BIRQ5g = Q_Ctl[8];
-    assign BIRQ6g = Q_Ctl[9];
+    assign BSYNCg  = Q_Ctl[0];
+    assign BDINg   = Q_Ctl[1];
+    assign BDOUTg  = Q_Ctl[2];
+    assign BWTBTg  = Q_Ctl[3];
+    assign BDMRg   = Q_Ctl[4];
+    assign BREFg   = Q_Ctl[5];
+    assign BBS7g   = Q_Ctl[6];
+    assign BIRQ4g  = Q_Ctl[7];
+    assign BIRQ5g  = Q_Ctl[8];
+    assign BIRQ6g  = Q_Ctl[9];
 
     
     // Detect assertion of BRPLYL

@@ -1,7 +1,7 @@
 #ifndef UQSSP_H
 #define UQSSP_H
 
-#include "MSCP.h"
+#include "MSCP.hpp"
 
 #define MAX_COMMANDS 16
 

@@ -31,7 +31,7 @@
         "BYTEEN_ENABLE": "0",
         "BYTEEN_POLARITY": "1",
         "HexFile_PathEnable": "1",
-        "HexFile_Path": "\"boot.mem\"",
+        "HexFile_Path": "\"boot/boot.mem\"",
         "WIDTH_RATIO": "4",
         "DATA_WIDTH_A": "16",
         "ADDREN_ENABLE": "1",
@@ -81,12 +81,12 @@
     "output": {
         "external_script_script": [],
         "external_source_source": [
-            "C:\\STM32\\MSCP\\qbus\\ip\\BootRom\\BootRom_tmpl.vhd",
-            "C:\\STM32\\MSCP\\qbus\\ip\\BootRom\\BootRom_tmpl.v",
+            "C:\\STM32\\MSCP\\qbus\\ip\\BootRom\\BootRom_define.vh",
             "C:\\STM32\\MSCP\\qbus\\ip\\BootRom\\BootRom.v",
-            "C:\\STM32\\MSCP\\qbus\\ip\\BootRom\\BootRom_define.vh"
+            "C:\\STM32\\MSCP\\qbus\\ip\\BootRom\\BootRom_tmpl.vhd",
+            "C:\\STM32\\MSCP\\qbus\\ip\\BootRom\\BootRom_tmpl.v"
         ]
     },
     "sw_version": "2023.2.307",
-    "generated_date": "2024-08-09T03:19:04.484300"
+    "generated_date": "2024-09-05T03:53:35.506844"
 }

@@ -43,7 +43,7 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-`define IP_UUID _8533baba86024d2f98fa286a1ee3fac3
+`define IP_UUID _aef98735c62b4587b1ce6e48d8678b4a
 `define IP_NAME_CONCAT(a,b) a``b
 `define IP_MODULE_NAME(name) `IP_NAME_CONCAT(name,`IP_UUID)
 module BootRom (

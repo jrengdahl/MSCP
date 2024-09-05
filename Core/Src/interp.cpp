@@ -27,6 +27,8 @@
 #include "diskio.h"
 #include "ff.h"
 #include "Qbus.hpp"
+#include "uqssp.hpp"
+#include "MSCP.hpp"
 
 
 
@@ -41,8 +43,8 @@ extern omp_thread omp_threads[GOMP_MAX_NUM_THREADS];
 bool waiting_for_command = false;
 
 static FATFS FatFs[3];
-static FIL fil;
-static uint32_t qbuf[512/4];
+FIL fil;
+uint32_t qbuf[512/4];
 
 uint32_t table[]=
         {
@@ -434,37 +436,57 @@ void interp()
             uintptr_t addr = gethex(&p);            // get the address
             uint32_t value;
 
-            SCB->DCCIMVAC = addr;
+            skip(&p);
 
-            __asm__ __volatile__(
-                "dsb SY            \n\t"
-                "ldr %0, [%1]"     // load a word from the given address
-             : "=r"(value)
-             : "r"(addr)
-             : );
+            int size = 1;
+            if(isdigit(*p))size = getdec(&p);
 
-            printf("%08lx\n", value);               // print the result
+            for(int i=0; i++<size; addr += 4)
+                {
+                SCB->DCCIMVAC = addr;                   // clean and invalidate the cache so we access the actual memory
+                __asm__ __volatile__(
+                    "dsb SY            \n\t"
+                    "ldr %0, [%1]"                  // load a word from the given address
+                    : "=r"(value)
+                    : "r"(addr)
+                    : );
+
+                // print the result
+                if(i==size) printf("%08lx\n", value);
+                else        printf("%08lx ", value);
+                }
             }
 
 //              //                              //
-        HELP(  "ldrh <addr>                     load a halfword from address using ldrh")
+        HELP(  "ldrh <addr> {size {o}}          load a halfword from address using ldrh")
         else if(buf[0]=='l' && buf[1]=='d' && buf[2]=='r' && buf[3]=='h')
             {
             uintptr_t addr = gethex(&p);            // get the address
             uint32_t value;
 
-            SCB->DCCIMVAC = addr;
-
-            __asm__ __volatile__(
-                "dsb SY            \n\t"
-                "ldrh %0, [%1]"     // load a word from the given address
-             : "=r"(value)
-             : "r"(addr)
-             : );
-
             skip(&p);
-            if(*p=='o')printf("%06o\n", (int)value);
-            else printf("%04lx\n", value);                // print the result
+
+            int size = 1;
+            if(isdigit(*p))
+                {
+                size = getdec(&p);
+                skip(&p);
+                }
+
+
+            for(int i=0; i++<size; addr += 2)
+                {
+                SCB->DCCIMVAC = addr;
+                __asm__ __volatile__(
+                    "dsb SY            \n\t"
+                    "ldrh %0, [%1]"     // load a word from the given address
+                    : "=r"(value)
+                    : "r"(addr)
+                    : );
+
+                if(*p=='o')printf("%06o%c", (int)value, i==size?'\n':' ');
+                else       printf("%04lx%c",     value, i==size?'\n':' ');                // print the result
+                }
             }
 
 //              //                              //
@@ -1352,11 +1374,55 @@ void interp()
                     }
                 }
 
-            else if(p[0] == 'i')
+            else if(p[0] == 'd' && p[1] == ' ')
                 {
-                extern void Qinit();
-                Qinit();
+                skip(&p);
+
+                unsigned addr = gethex(&p);            // get the address
+                skip(&p);
+
+                int size = 2;
+                if(isxdigit(*p) || *p=='o')
+                    {
+                    size = gethex(&p);
+                    skip(&p);
+                    }
+
+                bool octal = false;
+                if(*p=='o')
+                    {
+                    octal = true;
+                    }
+
+                printf("Qbus dump %08o %06o\n", addr, size);
+
+                uint16_t buffer[8];
+
+                for(int i=0; i<size; i+= 16, addr += 16)
+                    {
+                    QReadBlock(addr, buffer, 8);
+
+                    if(octal)printf("%08o ", addr);
+                    else printf("%06x ", addr);
+
+                    for(int j=0; j<8; j++)
+                        {
+                        if(octal)printf("%06o ", buffer[j]);
+                        else printf("%04x ",buffer[j]);
+                        }
+                    printf("\n");
+                    }
                 }
+
+            else printf("unrecognized subcommand\n");
+            }
+
+//              //                              //
+        HELP(  "mscp                            test MSCP")
+        else if(buf[0]=='m' && buf[1]=='s' && buf[2]=='c' && buf[3]=='p')
+            {
+            Qinit();
+            MSCP_poll();
             }
 
         // print the help screen

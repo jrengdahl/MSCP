@@ -45,12 +45,14 @@ void mark() {__COMPILER_BARRIER();}
 
 void QbusInit()
     {
-    FADDR_SA = 0;
-    FADDR_LO = 0;
-    FADDR_HI = 0;
-    FADDR_DATA_OUT = 0;
-    FADDR_CT = 0x80;                // Turn all outputs off and clear the BSACK FF
-    (void)FADDR_ST;                 // read to clear status bits
+    FADDR_SA = 0;                   // clear the SA register written by the controller
+    FADDR_LO = 0;                   // clear the low Qbus address
+    FADDR_HI = 0;                   // clear the high Qbus address
+    FADDR_DATA_OUT = 0;             // clear the Qbus data out
+    FADDR_CT = 0x8000;              // Turn all outputs off and clear the BSACK FF
+    ASSERT(Clear_SA);
+    (void)FADDR_ST;                 // clear status bits and SA register register written by the PDP-11
+    DEASSERT(Clear_SA);
     }
 
 void QDMAbegin()

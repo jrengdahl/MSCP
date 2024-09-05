@@ -47,10 +47,11 @@ struct Q_Ctl
             unsigned BIRQ4              : 1;
             unsigned BIRQ5              : 1;
             unsigned BIRQ6              : 1;
-            unsigned Q_Addr_enable      : 1;
-            unsigned Q_Data_enable      : 1;
-            unsigned                    : 3; // Padding to make it a full 16-bit struct
-            unsigned DMA_done           : 1;
+            unsigned Q_Addr_enable      : 1;    // enable address onto Qbus during address phase
+            unsigned Q_Data_enable      : 1;    // enable data_out onto Qbus during data phase
+            unsigned Clear_SA           : 1;    // enable clear of SA register when ST is read
+            unsigned                    : 2;    // Padding to make it a full 16-bit struct
+            unsigned DMA_done           : 1;    // pulse this to clear BSACKg
             };
         uint16_t value; // This represents the whole struct as a single 16-bit value
         };

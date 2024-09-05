@@ -1,0 +1,1 @@
+cp bin2mem.py boot.c boot.h boot.ld boot.mem Makefile start.S subs.c xfer /mnt/c/STM32/MSCP/qbus/boot
