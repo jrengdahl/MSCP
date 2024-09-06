@@ -79,13 +79,13 @@ typedef unsigned char byte;
 
 /* Status invalid command subcodes */
 
-#define I_OPCD          (8 << 8)                        /* inv opcode */
-#define I_FLAG          (9 << 8)                        /* inv flags */
-#define I_MODF          (10 << 8)                       /* inv modifier */
-#define I_BCNT          (12 << 8)                       /* inv byte cnt */
-#define I_LBN           (28 << 8)                       /* inv LBN */
-#define I_VRSN          (12 << 8)                       /* inv version */
-#define I_FMTI          (28 << 8)                       /* inv format */
+#define I_OPCD          (8 << ST_V_SUB)                  /* inv opcode */
+#define I_FLAG          (9 << ST_V_SUB)                  /* inv flags */
+#define I_MODF          (10 << ST_V_SUB)                 /* inv modifier */
+#define I_BCNT          (12 << ST_V_SUB)                 /* inv byte cnt */
+#define I_LBN           (28 << ST_V_SUB)                 /* inv LBN */
+#define I_VRSN          (12 << ST_V_SUB)                 /* inv version */
+#define I_FMTI          (28 << ST_V_SUB)                 /* inv format */
 
 
 
@@ -98,10 +98,10 @@ struct longword
 
 struct unit_identifier
     {
-    long serno_lo;
-    word serno_hi;
-    byte model;
-    byte dev_class;
+    long serno_lo;                      // will be 3141592654 (for now)
+    word serno_hi;                      // will be 0
+    byte model;                         // model will be UID_RA92 (29) (fake ID)
+    byte dev_class;                     // dev class will be UID_DISK (2)
     };
 
 struct command
@@ -122,7 +122,7 @@ struct command
 
     union
         {
-        byte bytes[48];                     // force size to be 64 bytes
+        byte bytes[48];                     // force sizeof to be 64 bytes
 
         // online command parameters
         struct
@@ -136,7 +136,7 @@ struct command
             long                    : 32;
             };
 
-        // read parameters
+        // read/write command parameters
         struct
             {
             long        bytecount;
@@ -145,6 +145,8 @@ struct command
             long                : 32;
             long        LBN;
             };
+
+
         };
     };
 
@@ -169,7 +171,7 @@ struct response
         {
         byte bytes[48];                     // force size to be 64 bytes
 
-        // online parameters
+        // online response parameters
         struct
             {
             word        multiunit_code;
@@ -184,11 +186,11 @@ struct response
             long        volume_serial_number;    // optional, often zero
             };
 
-        // read parameters
+        // read response parameters
         struct
             {
-            long                    : 32;   // (byte count)
-            long                    : 32;   // (descriptor)
+            long                    : 32;
+            long                    : 32;
             long                    : 32;
             long                    : 32;
 
