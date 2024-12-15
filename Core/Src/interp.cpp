@@ -773,7 +773,7 @@ void interp()
 
 //              //                              //
         HELP(  "v <type> <num>                  set verbosity level")
-        else if(buf[0]=='v' && buf[1]==' ')
+        else if(buf[0]=='v' && (buf[1]==' ' || buf[1]==0))
             {
             extern int omp_verbose;
             extern int temp_verbose;
@@ -781,19 +781,16 @@ void interp()
             if(*p == 'o')
                 {
                 skip(&p);
-                if(isdigit(*p))
-                    {
-                    omp_verbose = getdec(&p);
-                    }
+                omp_verbose = getdec(&p);
                 }
             else if(*p == 't')
                 {
                 skip(&p);
-                if(isdigit(*p))
-                    {
-                    temp_verbose = getdec(&p);
-                    }
+                temp_verbose = getdec(&p);
                 }
+
+            printf("omp_verbose = %d\n", omp_verbose);
+            printf("temp_verbose = %d\n", temp_verbose);
             }
 
 //              //                              //

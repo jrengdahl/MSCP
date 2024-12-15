@@ -23,6 +23,7 @@ int read_temperature_raw()
     HAL_ADC_Start(&hadc3);
 
     HAL_ADC_PollForConversion(&hadc3, HAL_MAX_DELAY);
+
     int TS_DATA = HAL_ADC_GetValue(&hadc3);
     HAL_ADC_Stop(&hadc3);
 
@@ -30,7 +31,7 @@ int read_temperature_raw()
     }
 
 
-// This function reads the temperature sensor and returns the temperature in degrees Celsius.
+// This function reads the temperature sensor and returns the temperature in degrees Celsius times 1000.
 int read_temperature()
     {
     int TS_DATA = read_temperature_raw();

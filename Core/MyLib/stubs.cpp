@@ -24,7 +24,8 @@ void __cxa_pure_virtual()
 
 extern "C"
 void __cxa_atexit(void)
-    {   }
+    {
+    }
 
 void operator delete(void * p UNUSED)
     {
