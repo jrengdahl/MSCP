@@ -126,7 +126,7 @@ int main(void)
   MX_SPI3_Init();
   /* USER CODE BEGIN 2 */
 
-  extern void vcp_init();  
+  extern void vcp_init();
   vcp_init();
 
   /* start TIM2, whihc is used for the 1 usec clock */

@@ -83,12 +83,12 @@ static void xflush()
 
 void xmodem_receive(uint8_t *qbuffer)
     {
-    uint32_t packet = 1;                         // packet counter
+    uint32_t packet = 1;                        // packet counter
     int tries = 10;                             // retry counter
     int c;                                      // the character we got from the input stream
     uint32_t address = 0;                       // address of the next block in the SPI NOR
     int qi = 0;                                 // index into the qbuffer
-    uint8_t checksum;                           // packet checksum
+    uint8_t checksum = 0;                       // packet checksum
     unsigned timeout = 3'000'000;               // initial value: allow 30 seconds (3 * 10) to get XMODEM started in TeraTerm
     int duplicates = 0;
     int outoforder = 0;
@@ -180,7 +180,7 @@ void xmodem_receive(uint8_t *qbuffer)
             // If the sector buffer is full write it to the SPI NOR.
             // It is the host's responsibility to ensure that the download size is an integral number of sectors.
             // This is a valid assumption since the download is a FATFS or other file system image.
-            if (qi >= SPI_PAGE_SIZE)
+            if (qi >= QSPI_PAGE_SIZE)
                 {
                 // Write the full page to QSPI flash
                 if (QSPI_WritePage(&hospi1, address, qbuffer, QSPI_PAGE_SIZE) != HAL_OK)

@@ -131,7 +131,7 @@ DRESULT QSPI_read (
 {
   /* USER CODE BEGIN READ */
 
-    uint32_t address = sector * QSPI_SECTOR_SIZE;
+    uint32_t address = sector * QSPI_LBA_SIZE;
     for (UINT i = 0; i < count*2; i++)
         {
         if (QSPI_ReadPage(&hospi1, address, buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
@@ -160,7 +160,7 @@ DRESULT QSPI_write (
 {
   /* USER CODE BEGIN WRITE */
 
-    uint32_t address = sector * QSPI_SECTOR_SIZE;
+    uint32_t address = sector * QSPI_LBA_SIZE;
     for (UINT i = 0; i < count*2; i++)
         {
         if((address & (QSPI_BLOCK_SIZE-1)) == 0
