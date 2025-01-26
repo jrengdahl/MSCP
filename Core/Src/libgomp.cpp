@@ -29,8 +29,9 @@
 // The threads' stacks
 // thread 0 (background) uses the stack defined in the linker script
 
+static char TemperatureStack[512];                      // the stack for the interpreter thread
 static char InterpStack[3072];                          // the stack for the interpreter thread
-static char gomp_stacks[GOMP_MAX_NUM_THREADS-2][GOMP_STACK_SIZE] __ALIGNED(16);
+static char gomp_stacks[GOMP_MAX_NUM_THREADS-3][GOMP_STACK_SIZE] __ALIGNED(16);
 
 // An array of tasks.
 static task tasks[GOMP_NUM_TASKS];
@@ -157,8 +158,8 @@ void gomp_poll_threads()
 const char *thread_names[] =
     {
     "background",
+    "temperature",
     "interp",
-    "thread 2",
     "thread 3",
     "thread 4",
     "thread 5",
@@ -209,12 +210,17 @@ void libgomp_init()
             }
         else if(i == 1)
             {
+            libgomp_start_thread(omp_threads[i], gomp_worker, TemperatureStack, i);
+            thread_pool.add(&omp_threads[i]);
+            }
+        else if(i == 2)
+            {
             libgomp_start_thread(omp_threads[i], gomp_worker, InterpStack, i);
             thread_pool.add(&omp_threads[i]);
             }
         else
             {
-            libgomp_start_thread(omp_threads[i], gomp_worker, gomp_stacks[i-2], i);
+            libgomp_start_thread(omp_threads[i], gomp_worker, gomp_stacks[i-3], i);
             thread_pool.add(&omp_threads[i]);
             }
         }
@@ -587,7 +593,7 @@ void omp_set_nest_lock(omp_nest_lock_t *lock)
         ++lock->count;
         return;
         }
- 
+
     while(lock->lock==1)
         {
         yield();
@@ -622,7 +628,7 @@ int omp_test_nest_lock(omp_nest_lock_t *lock)
         ++lock->count;
         return lock->count;
         }
- 
+
     if(lock->lock == 0)
         {
         lock->lock = 1;
@@ -674,7 +680,7 @@ void GOMP_task (    void (*fn) (void *),
             dst = (char *)((uintptr_t)dst & ~(arg_align-1));
             cpyfn(dst, data);
             DPRINT(2)("call explicit task, id = %d(%d), code = %8p, data = %8p\n", thread.team_id, thread.id, fn, data);
-            fn(dst);            
+            fn(dst);
             }
         else
             {
@@ -699,8 +705,8 @@ void GOMP_task (    void (*fn) (void *),
         else
             {
             memcpy(arg, data, arg_size);
-            } 
-        
+            }
+
         task *task = 0;
 
         bool ok = task_pool.take(task);        // create a new task

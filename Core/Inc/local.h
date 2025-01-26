@@ -25,8 +25,6 @@ extern void skip(char **p);
 extern "C" {
 #endif
 
-//void trigon();
-//void trigoff();
 void memcpy32(uint32_t *dst, uint32_t *src, uint32_t size);
 
 #if __cplusplus

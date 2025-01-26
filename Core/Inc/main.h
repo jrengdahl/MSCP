@@ -82,6 +82,10 @@ void Error_Handler(void);
 #define trigon(x)  HAL_GPIO_WritePin(LED##x##_GPIO_Port, LED##x##_Pin, GPIO_PIN_SET)
 #define trigoff(x) HAL_GPIO_WritePin(LED##x##_GPIO_Port, LED##x##_Pin, GPIO_PIN_RESET);
 
+extern void LED_on();
+extern void LED_off();
+
+
 
 /* USER CODE END Private defines */
 

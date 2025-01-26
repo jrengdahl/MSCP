@@ -34,6 +34,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include <string.h>
+#include <ctype.h>        // For character handling functions
 #include "user_diskio.h"
 #include "QSPI.h"
 #include "FATFS_SD.h"
@@ -196,13 +197,13 @@ DRESULT QSPI_ioctl (
     case CTRL_SYNC:
         return RES_OK;
     case GET_SECTOR_COUNT:
-        *(DWORD *)buff = QSPI_TOTAL_SIZE / QSPI_SECTOR_SIZE;
+        *(DWORD *)buff = QSPI_TOTAL_SIZE / QSPI_LBA_SIZE;
         return RES_OK;
     case GET_SECTOR_SIZE:
-        *(WORD *)buff = QSPI_SECTOR_SIZE;
+        *(WORD *)buff = QSPI_LBA_SIZE;
         return RES_OK;
     case GET_BLOCK_SIZE:
-        *(DWORD *)buff = QSPI_BLOCK_SIZE / QSPI_SECTOR_SIZE;
+        *(DWORD *)buff = QSPI_BLOCK_SIZE;
         return RES_OK;
     default:
         return RES_PARERR;
@@ -218,5 +219,46 @@ DWORD get_fattime(void)
   /* USER CODE BEGIN get_fattime */
   return 0;
   /* USER CODE END get_fattime */
+}
+
+
+
+/**
+ * @brief Converts a single character between OEM and Unicode.
+ *
+ * This implementation handles only ASCII characters.
+ * Characters outside the ASCII range are replaced with '?'.
+ *
+ * @param chr The character to convert.
+ * @param dir The direction of conversion:
+ *            0 - OEM to Unicode (Decode)
+ *            1 - Unicode to OEM (Encode)
+ * @return WCHAR The converted character.
+ */
+WCHAR ff_convert(WCHAR chr, UINT dir) {
+    // ASCII range check
+    if (chr < 128) {
+        return (WCHAR)chr;
+    } else {
+        return (WCHAR)'?';  // Placeholder for non-ASCII characters
+    }
+}
+
+
+
+/**
+ * @brief Converts a single ASCII character to uppercase.
+ *
+ * Only lowercase ASCII letters ('a'-'z') are converted.
+ * All other characters are returned unchanged.
+ *
+ * @param wc The character to convert.
+ * @return WCHAR The uppercase equivalent if applicable.
+ */
+WCHAR ff_wtoupper(WCHAR wc) {
+    if(wc >= 'a' && wc <= 'z') {
+        return (WCHAR)(wc - ('a' - 'A'));
+    }
+    return wc;  // Return unchanged for non-lowercase letters
 }
 

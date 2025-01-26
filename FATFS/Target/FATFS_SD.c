@@ -37,14 +37,14 @@ static void DESELECT(BYTE drv)
 /* SPI transmit a byte */
 static void SPI_TxByte(BYTE drv, uint8_t data)
 {
-  while(!__HAL_SPI_GET_FLAG(HSPI_SDCARD(drv), SPI_FLAG_TXE));
+  while(!__HAL_SPI_GET_FLAG(HSPI_SDCARD(drv), SPI_FLAG_TXP));
   HAL_SPI_Transmit(HSPI_SDCARD(drv), &data, 1, SPI_TIMEOUT);
 }
 
 /* SPI transmit buffer */
 static void SPI_TxBuffer(BYTE drv, uint8_t *buffer, uint16_t len)
 {
-  while(!__HAL_SPI_GET_FLAG(HSPI_SDCARD(drv), SPI_FLAG_TXE));
+  while(!__HAL_SPI_GET_FLAG(HSPI_SDCARD(drv), SPI_FLAG_TXP));
   HAL_SPI_Transmit(HSPI_SDCARD(drv), buffer, len, SPI_TIMEOUT);
 }
 
@@ -53,7 +53,7 @@ static uint8_t SPI_RxByte(BYTE drv)
 {
   uint8_t dummy, data;
   dummy = 0xFF;
-  while(!__HAL_SPI_GET_FLAG(HSPI_SDCARD(drv), SPI_FLAG_TXE));
+  while(!__HAL_SPI_GET_FLAG(HSPI_SDCARD(drv), SPI_FLAG_TXP));
   HAL_SPI_TransmitReceive(HSPI_SDCARD(drv), &dummy, &data, 1, SPI_TIMEOUT);
   return data;
 }

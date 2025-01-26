@@ -43,7 +43,7 @@ extern void temperature_monitor();
 uint32_t LastTimeStamp = 0;
 
 // This exists as a central place to put a breakpoint when certain conditions are encountered.
-// To use, put a call to foo when the error condition occurs. 
+// To use, put a call to foo when the error condition occurs.
 int dummy = 0;
 void foo()
     {
@@ -108,12 +108,12 @@ void background()                                       // powerup init and back
 
     else if(omp_get_thread_num() == 1)                  // and thread 1 runs this:
         {
-        interp();                                       // run the command line interpreter
+        temperature_monitor();                          // run the temperature monitor
         }
 
     else if(omp_get_thread_num() == 2)                  // and thread 2 runs this:
         {
-        temperature_monitor();                          // run the temperature monitor
+        interp();                                       // run the command line interpreter
         }
 
     // neither of the above threads terminate, so the parallel never ends, and we should never get here

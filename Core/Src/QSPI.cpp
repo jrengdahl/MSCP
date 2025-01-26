@@ -286,4 +286,18 @@ HAL_StatusTypeDef QSPI_ReadStatusReg(OSPI_HandleTypeDef *hospi, uint8_t regComma
     return HAL_OK;
 }
 
+void print_status_register(uint8_t regCommand)
+{
+    uint8_t statusReg = 0;
+
+    if (QSPI_ReadStatusReg(&hospi1, regCommand, &statusReg) != HAL_OK)
+    {
+        printf("Error reading Status Register %02x\n", regCommand);
+    }
+    else
+    {
+        printf("Status Register %02x: 0x%02X\n", regCommand, statusReg);
+    }
+}
+
 

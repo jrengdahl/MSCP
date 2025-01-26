@@ -12,7 +12,7 @@ extern "C" {
 #endif
 
 #define QSPI_PAGE_SIZE 256
-#define QSPI_SECTOR_SIZE 512
+#define QSPI_LBA_SIZE 512
 #define QSPI_BLOCK_SIZE 4096
 #define QSPI_TOTAL_SIZE (16 * 1024 * 1024) // 16 MB for example
 

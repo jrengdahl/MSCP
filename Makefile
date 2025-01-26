@@ -20,7 +20,7 @@ TOUCHES := $(foreach file, $(LIST), $(basename $(patsubst $(ROOT)/%, %, $(file))
 
 .PHONY: touch-files
 touch-files:
-	$(foreach file, $(TOUCHES), touch $(file);)
+	$(foreach file, $(TOUCHES), mkdir -p $(dir $(file)); touch $(file);)
 	
 all: touch-files 
 	$(MAKE) -f makefile $(MAKECMDGOALS)

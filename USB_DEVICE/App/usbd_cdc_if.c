@@ -272,7 +272,7 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   *
   * @param  Buf: Buffer of data to be received
   * @param  Len: Number of data received (in bytes)
-  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAILL
+  * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
 static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t *Len)
 {
