@@ -3,16 +3,17 @@ This project contains a board design and firmware for a Qbus MSCP SSD board.
 The problem this is intended to solve is the lack of hard drives
 compatible with PDP-11 computers. The boards built by DEC seem to last
 forever, and can be powered by modern PC power supplies, but the hard
-drives of that era are 40 years old, and finding one of any size that
+drives of that era are 40+ years old, and finding one of any size that
 still works, and is affordable, is both difficult and risky. There are
 hard drive emulators available for industrial users, but these are
 expensive. These solutions typically involve a board with a MFM or SCSI
 interface that emulates a drive, and have to be used with a legacy hard
 drive controller such as an RQDX3, or a SCSI interface board, which
-itself can be expensive. I did buy one drive emulator, but have been
+itself can be expensive. I did buy an MFM drive emulator, but have been
 unable to get it working with my UDC11 hard drive controllers. 
 
-At present this is very much in development.
+At present this is very much in development. I have been able to boot a
+small test program from the SSD on a KDJ11D (PDP-11/53).
 
 The current firmware is based on my H503 project. For now the firmware
 consists of a command line interpreter which will implement commands to
@@ -48,7 +49,7 @@ The board contains:
    -- a SWD/trace connector for a Segger Jtrace Pro M
    -- a USB virtual terminal interface
    -- a handful of LEDs
-   -- any unused pis on the uC and FPGA are brought out to test points
+   -- any unused pins on the uC and FPGA are brought out to test points
 
 The board is a half-wide QBus board, the same size as a KDJ11-A
 or RQDX3.
@@ -60,8 +61,8 @@ complexity. (Previous boards were Arduino Nano sized.) I expect I will
 have to turn the board a couple times before I get everything right. The
 target cost of the final board in lots of 25 will be around $50. 
 
-I don't have any firm design for the MSCP firmware at present. I found
-online documents describing the MSCP protocol, and the source code for
-the RQDX3. At minimum I could emulate a RL02 drive while the MSCP
-firmware is being developed.
+I found online documents describing the MSCP protocol, and the source
+code for the RQDX3 and SIMH. I have implemented the startup and MSCP
+read command, and have been able to boot and run a test program from the
+SSD into the PDP-11/53 CPU.
 
