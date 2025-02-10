@@ -1,3 +1,8 @@
+// This module is mostly asynchronous, in the style of much PDP-11 logic of the time.
+// There are some windows present in the logic
+
+
+// D flip-flop with reset
 module DFFR (
     input logic clk,     // Clock input
     input logic reset,   // Asynchronous reset input, active low
@@ -13,6 +18,8 @@ module DFFR (
 
 endmodule
 
+
+// set-reset flip-flop 
 module SRFF (
     input logic set,     // Asynchronous set input, high-true
     input logic reset,   // Asynchronous reset input, high-true
@@ -82,7 +89,7 @@ module qbus (
     );
 
     // address of registers as seen from the H723
-    parameter [21:0] FADDR_IR   = 0;
+    parameter [21:0] FADDR_IP   = 0;
     parameter [21:0] FADDR_SA   = 2;
     parameter [21:0] FADDR_CT   = 4;
     parameter [21:0] FADDR_LO   = 6;
@@ -91,7 +98,7 @@ module qbus (
     parameter [21:0] FADDR_DATA_IN = 12;
 
     // addresses of registers as seen from the PDP-11
-    parameter [21:0] QADDR_IR = 22'o17772150;
+    parameter [21:0] QADDR_IP = 22'o17772150;
     parameter [21:0] QADDR_SA = 22'o17772152;
 
     parameter [21:0] QADDR_ROM = 22'o17771000;      // this is the alternate boot ROM address, since 17773000 it taken by the KDJ11's on-board ROM
@@ -126,7 +133,7 @@ module qbus (
     // Both the Qbus and FMC bus have multiplexed address/data
     // these are the addresses latched during the address phase of a bbus cycle for both busses
     logic [23:0] Faddress;          // Latch for the FMC address
-    logic Q_IP_selected;            // latches whether the IR register is addressed by the Qbus
+    logic Q_IP_selected;            // latches whether the IP register is addressed by the Qbus
     logic Q_SA_selected;            // latches whether the SA register is addressed by the Qbus
     logic Q_ROM_selected;           // latches whether the SA register is addressed by the Qbus
     logic [12:0] Qaddress;          // latches the low bits of the Qbus address
@@ -138,7 +145,7 @@ module qbus (
     assign FPGA_IRQ = IP_Read || IP_Written || SA_Read || SA_Written;
 
     // IP is being read by H723
-    wire F_IP_read_enable = !NE1 && !NOE && Faddress[21:0] == FADDR_IR[21:0];
+    wire F_IP_read_enable = !NE1 && !NOE && Faddress[21:0] == FADDR_IP[21:0];
   
 
     assign BIAKOg = 0;
@@ -225,7 +232,7 @@ module qbus (
             begin
             DA_OE = 16'hFFFF;
 
-            if(Faddress[21:1] == FADDR_IR[21:1])
+            if(Faddress[21:1] == FADDR_IP[21:1])
                 begin
                 DA_OUT = {8'b0,     // Drive the AD bus with register data
                         BSACKg,
@@ -284,7 +291,7 @@ module qbus (
             end
         else
             begin
-            Q_IP_selected  <= !BBS7f && ~BDALf_IN[12:1] == QADDR_IR[12:1];
+            Q_IP_selected  <= !BBS7f && ~BDALf_IN[12:1] == QADDR_IP[12:1];
             Q_SA_selected  <= !BBS7f && ~BDALf_IN[12:1] == QADDR_SA[12:1];
             Q_ROM_selected <= !BBS7f && ~BDALf_IN[12:9] == QADDR_ROM[12:9];
             Qaddress       <=           ~BDALf_IN[12:0];
@@ -381,7 +388,7 @@ module qbus (
             end
 
         // transactions performed as bus slave
-        // Qbus read of IR register
+        // Qbus read of IP register
         else if (Q_IP_selected && OutGate)
             begin
             BDALf_OE = 22'h3FFFFF;                          // enable the FPGA bus drivers to output the data

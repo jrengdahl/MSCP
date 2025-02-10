@@ -7,14 +7,17 @@
 #include "cmsis.h"
 #include "serial.h"
 #include "QSPI.h"
+#include "diskio.h"
 
 extern uint32_t qbuf[512/4];
 extern void print_status_register(uint8_t regCommand);
 
+extern "C" DRESULT QSPI_ioctl (BYTE pdrv, BYTE cmd, void *buff);
+
 
 void QspiCommand(char *p)
     {
-    if(*p == 'r')
+    if(p[0] == 'r')
         {
         int count = 1;
 
@@ -69,6 +72,31 @@ void QspiCommand(char *p)
         QSPI_EraseChip(&hospi1);
         printf("erasing complete\n");
         }
+    else if(p[0] == 'c')
+        {
+        uint32_t addr = 0;
+        DWORD count;
+        DWORD i;
+        int j;
+
+        QSPI_ioctl(0, GET_SECTOR_COUNT, &count);  // get sector count (first arg, pdrv, is ignored)
+
+        for(i=0; i<count; i++)
+            {
+            QSPI_ReadPage(&hospi1, addr, (uint8_t *)&qbuf, 256);
+            for(j=0; j<256/4; j++)
+                {
+                if(qbuf[j] != 0xffffffff)
+                    {
+                    printf("chip is not erased at %lx\n", addr);
+                    break;
+                    }
+                }
+            if(j != 256/4)break;
+            addr += 256;
+            }
+        if(i == count)printf("entire chip is erased\n");
+        }
     else if(p[0] == 'x')
         {
         int res;
@@ -78,5 +106,15 @@ void QspiCommand(char *p)
         if(res==0)printf("file received OK\n");
         else printf("xmodem transfer failed %d\n", res);
         }
-    else printf("unrecognized subcommand\n");
+    else
+        {
+        printf("quad-SPI commands:\n");
+        printf("  q r <addr> <count>       read and dump pages\n");
+        printf("  q s                      print status bytes\n");
+        printf("  q f <addr> <data>        fill a page with data word\n");
+        printf("  q e <addr> <count>       erase sectors\n");
+        printf("  q ee                     erase entire chip\n");
+        printf("  q c                      erase check entire chip\n");
+        printf("  q x                      download and write image via Xmodem\n");
+        }
     }

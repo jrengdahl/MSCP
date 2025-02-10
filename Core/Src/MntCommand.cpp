@@ -23,6 +23,8 @@ void MntCommand(char *p)
         return;
         }
 
+    printf("mounting drive %d %s\n", drv, p);
+
     if(f_mount(&FatFs[drv], p, 1) != FR_OK)
         {
         printf("FATFS mount error\n");

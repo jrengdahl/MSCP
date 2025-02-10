@@ -288,7 +288,7 @@ void interp()
             }
 
         HELP(  "q                               QSPI tests")
-        else if(buf[0]=='q' && buf[1]==' ')
+        else if(buf[0]=='q')
             {
             extern void QspiCommand(char *p);
             QspiCommand(p);
@@ -396,17 +396,25 @@ void interp()
                 SCB->DCCIMVAC = (uint32_t)addr+64;
                 memcpy32(qbuf, addr, sizeof(table));
                 }
+            else
+                {
+                printf("fpga commands\n");
+                printf("fpga cr        pulse CRESET_N\n");
+                printf("fpga 1 <addr>  write and read back four halfwords\n");
+                printf("fpga 2 <addr>  write and read back an 80 byte table\n");
+                }
             }
 
 
 
 //              //                              //
+#define MAXCOUNT 8
         HELP(  "b <cmd> <args>                  Qbus menu")
-        else if(buf[0]=='b' && buf[1]==' ')
+        else if(buf[0]=='b')
             {
             if(p[0] == 'r' && p[1] == ' ')
                 {
-                uint16_t values[8];
+                uint16_t values[MAXCOUNT];
 
                 skip(&p);
 
@@ -428,12 +436,11 @@ void interp()
                     skip(&p);
                     }
 
-
                 int count = 1;
                 if(isdigit(*p))
                     {
                     count = getdec(&p);
-                    skip(&p);
+                    if(count > MAXCOUNT)count = MAXCOUNT;
                     }
 
                 for(int rpt=0; rpt<repeat && !ControlC; yield(), rpt++)
@@ -455,7 +462,7 @@ void interp()
 
             else if(p[0] == 'w' && p[1]=='w')
                 {
-                uint16_t values[8];
+                uint16_t values[MAXCOUNT];
                 int count = 0;
 
                 skip(&p);
@@ -471,7 +478,7 @@ void interp()
                 uint32_t addr = gethex(&p);             // get the address
                 skip(&p);
 
-                while((isxdigit(*p) || *p=='o') && count <8)
+                while(count < MAXCOUNT && (isxdigit(*p) || *p=='o'))
                     {
                     values[count++] = gethex(&p);            // get the data
                     skip(&p);
@@ -528,7 +535,48 @@ void interp()
                     }
                 }
 
-            else printf("unrecognized subcommand\n");
+            else
+                {
+                printf("bus commands:\n");
+                printf("b r {r<repeat count>} <addr> {o} {<count>}   read words from Qbus\n");
+                printf("b ww {r<repeat count>} <addr> <data> ...     write words to Qbus\n");
+                printf("b d <addr> {o} {<count>}                     dump words from Qbus\n");
+                printf("Controller addresses:\n");
+                printf("0x60000000 IP, PDP-11 read = poll; PDP-11 write = init controller, data ignored\n");
+                printf("               controller read = read status and clear latched status bits\n");
+                printf("               controller write = NOP\n");
+                printf(" bit  0: IP was read\n");
+                printf(" bit  1: IP was written\n");
+                printf(" bit  2: SA was read\n");
+                printf(" bit  3: SA was written\n");
+                printf(" bit  4: state of BRPLY\n");
+                printf(" bit  5: BRPLY was asserted\n");
+                printf(" bit  6: BRPLY was deasserted\n");
+                printf(" bit  7: state of BSACK\n");
+                printf(" bit  15-8: read as zero\n");
+                printf("0x60000002 SA controller writes status, reads address\n");
+                printf("0x60000004 CT bus control bits\n");
+                printf(" bit  0: BSYNC\n");
+                printf(" bit  1: BDIN\n");
+                printf(" bit  2: BDOUT\n");
+                printf(" bit  3: BWTBT\n");
+                printf(" bit  4: BDMR\n");
+                printf(" bit  5: BREF\n");
+                printf(" bit  6: BBS7\n");
+                printf(" bit  7: BIRQ4\n");
+                printf(" bit  8: BIRQ5\n");
+                printf(" bit  9: BIRQ6\n");
+                printf(" bit 10: enable address onto Qbus during address phase\n");
+                printf(" bit 11: enable data_out onto Qbus during data phase\n");
+                printf(" bit 12: Clear SA when IP is read by controller\n");
+                printf(" bit 13: spare\n");
+                printf(" bit 14: spare\n");
+                printf(" bit 15: write 1 to signal DMA_done (clear BSACK), reads back as 0\n");
+                printf("0x60000006 LO low address\n");
+                printf("0x60000008 HI high address (6 bits)\n");
+                printf("0x6000000A DATA_OUT data to be written to Qbus\n");
+                printf("0x6000000C DATA_IN data read from Qbus\n");
+                }
             }
 
 //              //                              //

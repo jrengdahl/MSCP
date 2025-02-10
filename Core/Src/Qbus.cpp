@@ -50,7 +50,7 @@ void QbusInit()
     FADDR_HI = 0;                   // clear the high Qbus address
     FADDR_DATA_OUT = 0;             // clear the Qbus data out
     FADDR_CT = 0x8000;              // Turn all outputs off and clear the BSACK FF
-    ASSERT(Clear_SA);
+    ASSERT(Clear_SA);               // clear the SA register written by the PDP-11
     (void)FADDR_ST;                 // clear status bits and SA register register written by the PDP-11
     DEASSERT(Clear_SA);
     }

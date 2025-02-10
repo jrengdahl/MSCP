@@ -1,5 +1,5 @@
 --------------------------------------------------------------------------------
--- Copyright (C) 2013-2023 Efinix Inc. All rights reserved.              
+-- Copyright (C) 2013-2024 Efinix Inc. All rights reserved.              
 --
 -- This   document  contains  proprietary information  which   is        
 -- protected by  copyright. All rights  are reserved.  This notice       
@@ -37,18 +37,21 @@
 --
 --------------------------------------------------------------------------------
 ------------- Begin Cut here for COMPONENT Declaration ------
-COMPONENT BootRom is
-PORT (
-addr : in std_logic_vector(7 downto 0);
-rdata_a : out std_logic_vector(15 downto 0);
-clk : in std_logic);
-END COMPONENT;
----------------------- End COMPONENT Declaration ------------
+component BootRom is
+port (
+    addr : in std_logic_vector(7 downto 0);
+    rdata_a : out std_logic_vector(15 downto 0);
+    clk : in std_logic
+);
+end component BootRom;
 
+---------------------- End COMPONENT Declaration ------------
 ------------- Begin Cut here for INSTANTIATION Template -----
 u_BootRom : BootRom
-PORT MAP (
-addr => addr,
-rdata_a => rdata_a,
-clk => clk);
+port map (
+    addr => addr,
+    rdata_a => rdata_a,
+    clk => clk
+);
+
 ------------------------ End INSTANTIATION Template ---------

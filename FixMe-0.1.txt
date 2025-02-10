@@ -18,7 +18,7 @@ it is an output. It can be used as an interrupt handshake from the FPGA to the H
 
 DONE 10K pulldowns are needed on the gates of all MOSFETS. Without the pulldown, at powerup, while the MCU or FPGA pins driving
 the gates are still floating, the gates will eventually float high and turn on the MOSFETS. For LED drivers this is simply
-wierd looking, as the LEDs slowly get brighter until they are full on, but for the Qbus drivers this is not a good thing.
+weird looking, as the LEDs slowly get brighter until they are full on, but for the Qbus drivers this is not a good thing.
 
 
 Need to change the FPGA JTAG connector to match the Efinix programming cable. Also need to connect CRESET_N to that connector.
@@ -37,7 +37,7 @@ What this means is that when you tell the FMC configurator to output a 23 bit ad
 which results in a 16 megabyte address space. I will leave A22 in the design. Having multiple mappings of the 4 megabyte QBus address space
 might be useful. For example, I can have one copy mapped as Device memory, and another copy cached (Normal).
 
-A 23 bit address is the largest useable FMC address on the STM32H723ZG, since A24 would conflict with the trace port.
+A 23 bit address is the largest usable FMC address on the STM32H723ZG, since A24 would conflict with the trace port.
 
 
 Change the color of the LEDs so that it is easier to tell which LED is lit from a distance. The LEDs are a bit too bright.
