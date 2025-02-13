@@ -44,10 +44,14 @@ Change the color of the LEDs so that it is easier to tell which LED is lit from 
 Perhaps change the second row of LEDs, or get rid of them.
 
 
-See if there is a way to have both the H723 and the FPGA connected to the SPI-NOR.
+See if there is a way to have both the H723 and the FPGA connected to the SPI-NOR. Make the SS_N pulldown a jumper option, so it can be pulled either high or low.
 
 
 Enable the H723 to assert INITL on the backplane.
 
 
 Route BOOT0 also to a spare input, so the pushbutton can be used as a user input.
+
+Make sure SS_N is pulled low at powerup. This may require a change to BDAL5f.
+
+Use CDONE to disable input drivers until configuration is complete.

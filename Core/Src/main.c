@@ -124,6 +124,7 @@ int main(void)
   MX_FMC_Init();
   MX_SPI1_Init();
   MX_SPI3_Init();
+  MX_SPI5_Init();
   /* USER CODE BEGIN 2 */
 
   extern void vcp_init();
@@ -218,7 +219,7 @@ void PeriphCommonClock_Config(void)
   */
   PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_USB|RCC_PERIPHCLK_ADC
                               |RCC_PERIPHCLK_SPI3|RCC_PERIPHCLK_SPI2
-                              |RCC_PERIPHCLK_SPI1;
+                              |RCC_PERIPHCLK_SPI1|RCC_PERIPHCLK_SPI5;
   PeriphClkInitStruct.PLL3.PLL3M = 1;
   PeriphClkInitStruct.PLL3.PLL3N = 24;
   PeriphClkInitStruct.PLL3.PLL3P = 3;
@@ -228,6 +229,7 @@ void PeriphCommonClock_Config(void)
   PeriphClkInitStruct.PLL3.PLL3VCOSEL = RCC_PLL3VCOWIDE;
   PeriphClkInitStruct.PLL3.PLL3FRACN = 0;
   PeriphClkInitStruct.Spi123ClockSelection = RCC_SPI123CLKSOURCE_PLL3;
+  PeriphClkInitStruct.Spi45ClockSelection = RCC_SPI45CLKSOURCE_PLL3;
   PeriphClkInitStruct.UsbClockSelection = RCC_USBCLKSOURCE_PLL3;
   PeriphClkInitStruct.AdcClockSelection = RCC_ADCCLKSOURCE_PLL3;
   if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)

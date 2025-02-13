@@ -29,6 +29,7 @@
 #include "Qbus.hpp"
 #include "uqssp.hpp"
 #include "MSCP.hpp"
+#include "gpio.h"
 
 
 
@@ -41,31 +42,6 @@ bool waiting_for_command = false;
 FATFS FatFs[_VOLUMES];
 FIL fil;
 uint32_t qbuf[512/4];
-
-uint32_t table[]=
-        {
-        0x00000000,
-        0x11111111,
-        0x22222222,
-        0x33333333,
-        0x44444444,
-        0x55555555,
-        0x66666666,
-        0x77777777,
-        0x88888888,
-        0x99999999,
-        0xaaaaaaaa,
-        0xbbbbbbbb,
-        0xcccccccc,
-        0xdddddddd,
-        0xeeeeeeee,
-        0xffffffff,
-        0x12345678,
-        0x23456789,
-        0x3456789a,
-        0x456789ab
-        };
-
 
 
 
@@ -364,48 +340,95 @@ void interp()
                     HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(1));
                     }
                 }
-            else if(p[0] == '1')
+            else if(p[0] == 'p')
                 {
+            	const char *filename = "2:qbus.hex.bin";
+            	FIL src_file;
+                FRESULT fres = FR_OK;
+                UINT bytes_read;
+                HAL_StatusTypeDef sres = HAL_OK;
+                int size = 0;
+                const int BLKSIZE = 512;
+
                 skip(&p);
-                uint32_t addr = gethex(&p);
-                uint16_t volatile *hword = (uint16_t volatile *)addr;
+                if(*p)filename = p;
 
-                hword[0] = 0x2211;
-                hword[1] = 0x4433;
-                hword[2] = 0x6655;
-                hword[3] = 0x8877;
+                // Open the source file
+                fres = f_open(&src_file, filename, FA_READ);
+                if (fres != FR_OK)
+                    {
+                    printf("Failed to open source file: %s\n", p);
+                    continue;
+                    }
 
-                SCB->DCCIMVAC = addr;
+                // toggle CRESET_N low then high
+                HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(0));
+                HAL_Delay(300);
+                HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(1));
+                HAL_Delay(150);
 
-                uint16_t rb[4];
-                rb[0] = hword[0];
-                rb[1] = hword[1];
-                rb[2] = hword[2];
-                rb[3] = hword[3];
+                // Copy data from source to destination
+                while (1)
+                    {
+                    // Read a chunk of data from the source file
+                    trigon(0);
+                    fres = f_read(&src_file, qbuf, BLKSIZE, &bytes_read);
+                    trigoff(0);
+                    if (fres != FR_OK || bytes_read == 0) break;  // Check for end of file or read error
 
-                printf("%04x %04x %04x %04x\n", rb[0], rb[1], rb[2], rb[3]);
+                    // Write the chunk of data to the FPGA
+                    sres = HAL_SPI_Transmit(&hspi5, (const uint8_t *)&qbuf, bytes_read, HAL_MAX_DELAY);
+                    if (sres != HAL_OK) break;
+                    size += bytes_read;
+                    }
+
+                // Close file
+                f_close(&src_file);
+
+                memset(qbuf, 0, sizeof(qbuf));
+                HAL_SPI_Transmit(&hspi5, (const uint8_t *)&qbuf, 128, HAL_MAX_DELAY);
+
+                unsigned cdone = HAL_GPIO_ReadPin(GPIONAME(CDONE));
+                unsigned nstatus = HAL_GPIO_ReadPin(GPIONAME(NSTATUS));
+
+                // Check if the loop exited due to an error
+                if (fres != FR_OK || sres != HAL_OK)
+                    {
+                    printf("Failed to copy file to FPGA: fres = %d, sres = %d\n", fres, sres);
+                    }
+                else
+                    {
+                    printf("programming complete, %d bytes written\n", size);
+                    }
+
+                printf("CDONE = %d, NSTATUS = %d\n", cdone, nstatus);
                 }
-            else if(p[0] == '2')
+            else if(p[0] == 't')
                 {
-                skip(&p);
-                uint32_t *addr = (uint32_t *)gethex(&p);
+                unsigned cdone = HAL_GPIO_ReadPin(GPIONAME(CDONE));
+                unsigned nstatus = HAL_GPIO_ReadPin(GPIONAME(NSTATUS));
 
-                memcpy32(addr, table, sizeof(table));
-                SCB->DCCIMVAC = (uint32_t)addr;
-                SCB->DCCIMVAC = (uint32_t)addr+32;
-                SCB->DCCIMVAC = (uint32_t)addr+64;
-                memcpy32(qbuf, addr, sizeof(table));
+                printf("CDONE = %d, NSTATUS = %d\n", cdone, nstatus);
                 }
+            else if(p[0] == 'd')
+            	{
+            	HAL_GPIO_DeInit(GPIONAME(SPI5_SCK));
+            	HAL_GPIO_DeInit(GPIONAME(SPI5_MOSI));
+            	}
+            else if(p[0] == 'e')
+            	{
+            	MX_GPIO_Init();
+            	}
             else
                 {
                 printf("fpga commands\n");
-                printf("fpga cr        pulse CRESET_N\n");
-                printf("fpga 1 <addr>  write and read back four halfwords\n");
-                printf("fpga 2 <addr>  write and read back an 80 byte table\n");
+                printf("fpga cr             pulse CRESET_N\n");
+                printf("fpga p <filename>   program FPGA\n");
+                printf("fpga t              test FPGA status pins\n");
+                printf("fpga d              disable FPGA programming SPI port\n");
+                printf("fpga e              re-init FPGA programming SPI port\n");
                 }
             }
-
-
 
 //              //                              //
 #define MAXCOUNT 8

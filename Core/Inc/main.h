@@ -57,12 +57,22 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define CDONE_Pin GPIO_PIN_13
+#define CDONE_GPIO_Port GPIOC
+#define SPI5_SCK_Pin GPIO_PIN_7
+#define SPI5_SCK_GPIO_Port GPIOF
+#define SPI5_MISO_Pin GPIO_PIN_8
+#define SPI5_MISO_GPIO_Port GPIOF
+#define SPI5_MOSI_Pin GPIO_PIN_9
+#define SPI5_MOSI_GPIO_Port GPIOF
 #define CRESET_N_Pin GPIO_PIN_0
 #define CRESET_N_GPIO_Port GPIOA
 #define PA3_Pin GPIO_PIN_3
 #define PA3_GPIO_Port GPIOA
 #define PA4_Pin GPIO_PIN_4
 #define PA4_GPIO_Port GPIOA
+#define NSTATUS_Pin GPIO_PIN_11
+#define NSTATUS_GPIO_Port GPIOF
 #define LED2_Pin GPIO_PIN_9
 #define LED2_GPIO_Port GPIOC
 #define SPI3_NSS_Pin GPIO_PIN_15
