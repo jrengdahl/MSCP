@@ -35,6 +35,7 @@
 
 extern void bear();
 extern "C" char *strchrnul(const char *s, int c);   // POSIX function but not included in newlib, see https://linux.die.net/man/3/strchr
+extern void ProgramFPGA(char *p = 0);
 
 char buf[INBUFLEN];
 bool waiting_for_command = false;
@@ -47,6 +48,8 @@ uint32_t qbuf[512/4];
 
 // print help string, see usage below
 #define HELP(s) else if(buf[0]=='?' && puts(s) && 0){}
+
+
 
 void interp()
     {
@@ -81,6 +84,7 @@ void interp()
         printf("FATFS mount OK on SPI-NOR\n");
         }
 
+    ProgramFPGA();
 
     while(1)
         {
@@ -341,68 +345,10 @@ void interp()
                     }
                 }
             else if(p[0] == 'p')
-                {
-            	const char *filename = "2:qbus.hex.bin";
-            	FIL src_file;
-                FRESULT fres = FR_OK;
-                UINT bytes_read;
-                HAL_StatusTypeDef sres = HAL_OK;
-                int size = 0;
-                const int BLKSIZE = 512;
-
+            	{
                 skip(&p);
-                if(*p)filename = p;
-
-                // Open the source file
-                fres = f_open(&src_file, filename, FA_READ);
-                if (fres != FR_OK)
-                    {
-                    printf("Failed to open source file: %s\n", p);
-                    continue;
-                    }
-
-                // toggle CRESET_N low then high
-                HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(0));
-                HAL_Delay(300);
-                HAL_GPIO_WritePin(GPIONAME(CRESET_N), (GPIO_PinState)(1));
-                HAL_Delay(150);
-
-                // Copy data from source to destination
-                while (1)
-                    {
-                    // Read a chunk of data from the source file
-                    trigon(0);
-                    fres = f_read(&src_file, qbuf, BLKSIZE, &bytes_read);
-                    trigoff(0);
-                    if (fres != FR_OK || bytes_read == 0) break;  // Check for end of file or read error
-
-                    // Write the chunk of data to the FPGA
-                    sres = HAL_SPI_Transmit(&hspi5, (const uint8_t *)&qbuf, bytes_read, HAL_MAX_DELAY);
-                    if (sres != HAL_OK) break;
-                    size += bytes_read;
-                    }
-
-                // Close file
-                f_close(&src_file);
-
-                memset(qbuf, 0, sizeof(qbuf));
-                HAL_SPI_Transmit(&hspi5, (const uint8_t *)&qbuf, 128, HAL_MAX_DELAY);
-
-                unsigned cdone = HAL_GPIO_ReadPin(GPIONAME(CDONE));
-                unsigned nstatus = HAL_GPIO_ReadPin(GPIONAME(NSTATUS));
-
-                // Check if the loop exited due to an error
-                if (fres != FR_OK || sres != HAL_OK)
-                    {
-                    printf("Failed to copy file to FPGA: fres = %d, sres = %d\n", fres, sres);
-                    }
-                else
-                    {
-                    printf("programming complete, %d bytes written\n", size);
-                    }
-
-                printf("CDONE = %d, NSTATUS = %d\n", cdone, nstatus);
-                }
+				ProgramFPGA(p);
+            	}
             else if(p[0] == 't')
                 {
                 unsigned cdone = HAL_GPIO_ReadPin(GPIONAME(CDONE));

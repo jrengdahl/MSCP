@@ -1,5 +1,7 @@
-// This module is mostly asynchronous, in the style of much PDP-11 logic of the time.
-// There are some windows present in the logic
+// This module is mostly asynchronous, as is much PDP-11 logic of the time.
+// There are some windows present in the logic. It should work *most* of the time,
+// but there may be occasional glitches. Once the main functionality has been
+// implemented and checked out these shortcomings should be fixed.
 
 
 // D flip-flop with reset
@@ -96,6 +98,7 @@ module qbus (
     parameter [21:0] FADDR_HI   = 8;
     parameter [21:0] FADDR_DATA_OUT = 10;
     parameter [21:0] FADDR_DATA_IN = 12;
+    parameter [21:0] FADDR_TEST = 14;
 
     // addresses of registers as seen from the PDP-11
     parameter [21:0] QADDR_IP = 22'o17772150;
@@ -140,9 +143,10 @@ module qbus (
 
     logic [15:0] ROMdata;           // data from the boot ROM
     
-
+    logic [15:0] TestReg;           // test register
+    
     // interrupt the H723 if the PDP-11 has read or written any register
-    assign FPGA_IRQ = IP_Read || IP_Written || SA_Read || SA_Written;
+    assign FPGA_IRQ = IP_Read || IP_Written || SA_Read || SA_Written || TestReg[0];
 
     // IP is being read by H723
     wire F_IP_read_enable = !NE1 && !NOE && Faddress[21:0] == FADDR_IP[21:0];
@@ -209,6 +213,11 @@ module qbus (
             if (!NBL0) Q_Data_out[7:0]  <= DA_IN[7:0];   // Byte 0 write
             if (!NBL1) Q_Data_out[15:8] <= DA_IN[15:8];  // Byte 1 write
             end
+        else if (!NE1 && Faddress[21:1] == FADDR_TEST[21:1])
+            begin
+            if (!NBL0) TestReg[7:0]  <= DA_IN[7:0];   // Byte 0 write
+            if (!NBL1) TestReg[15:8] <= DA_IN[15:8];  // Byte 1 write
+            end
         end
 
     // FMC read
@@ -250,11 +259,11 @@ module qbus (
                 end
             else if(Faddress[21:1] == FADDR_CT[21:1])
                 begin
-                DA_OUT = {1'b0, Q_Ctl};    // Drive the AD bus with register data
+                DA_OUT = {1'b0, Q_Ctl}; // Drive the AD bus with register data
                 end
             else if(Faddress[21:1] == FADDR_LO[21:1])
                 begin
-                DA_OUT = Q_Addr[15:0];    // Drive the AD bus with register data
+                DA_OUT = Q_Addr[15:0];  // Drive the AD bus with register data
                 end
             else if(Faddress[21:1] == FADDR_HI[21:1])
                 begin
@@ -266,7 +275,11 @@ module qbus (
                 end
             else if(Faddress[21:1] == FADDR_DATA_IN[21:1])
                 begin
-                DA_OUT = ~BDALf_IN;    // Drive the AD bus directly from the Qbus data
+                DA_OUT = ~BDALf_IN;     // Drive the AD bus directly from the Qbus data
+                end
+            else if(Faddress[21:1] == FADDR_TEST[21:1])
+                begin
+                DA_OUT = TestReg;       // Drive the AD bus with test register data
                 end
             end
         end

@@ -7,7 +7,7 @@
 #include "tim.h"
 
 
-static const int NHIST = 100;
+static const int NHIST = 50;
 static int hist[NHIST];
 static uint32_t h_start = 0;
 
@@ -21,7 +21,7 @@ static void hstop()
     uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
     uint32_t elapsed = now - h_start;
     uint32_t index = elapsed/1000;
-    if(index >= NHIST)return;
+    if(index >= NHIST)index=NHIST-1;
     ++hist[index];
     }
 
@@ -44,6 +44,9 @@ static void phist()
 
 #define PACKET_SIZE 128         // size of an XMODEM packet
 
+static const unsigned FIRST_TIMEOUT = 3'000'000;
+static const unsigned LATER_TIMEOUT = 50'000;
+
 static uint8_t xbuffer[PACKET_SIZE + 5]; // Packet buffer (with header, block number, and checksum)
 
 
@@ -63,7 +66,7 @@ static void xflush()
 
     do
         {
-        c = __io_getchart(20'000);
+        c = __io_getchart(LATER_TIMEOUT);
         }
     while(c != -1);
     }
@@ -81,7 +84,7 @@ static void xflush()
 //                                      returns a character (0-255) or -1 for timeout
 
 
-void xmodem_receive(uint8_t *qbuffer)
+int xmodem_receive(uint8_t *qbuffer)
     {
     uint32_t packet = 1;                        // packet counter
     int tries = 10;                             // retry counter
@@ -89,12 +92,14 @@ void xmodem_receive(uint8_t *qbuffer)
     uint32_t address = 0;                       // address of the next block in the SPI NOR
     int qi = 0;                                 // index into the qbuffer
     uint8_t checksum = 0;                       // packet checksum
-    unsigned timeout = 3'000'000;               // initial value: allow 30 seconds (3 * 10) to get XMODEM started in TeraTerm
+    unsigned timeout = FIRST_TIMEOUT;           // initial value: allow 30 seconds (3 * 10) to get XMODEM started in TeraTerm
     int duplicates = 0;
     int outoforder = 0;
     int badseq = 0;
     int badchecksum = 0;
-    int timeouts = 0;
+    int packet_timeouts = 0;
+    int char_timeouts = 0;
+    int packet_starts = 0;
 
     SerialRaw = true;                           // tell the console to ignore special characters such as control-C and newline
 
@@ -107,12 +112,19 @@ void xmodem_receive(uint8_t *qbuffer)
         if(c == -1)                             // if timeout,
             {
             putx(NAK);                          // on timeout request to (re)send the packet
-            ++timeouts;
+            ++packet_timeouts;
             }
 
         else if (c == SOH)                      // start receiving a packet
             {
-            timeout = 20'000;                   // once a packet has been started, set timeout shorter
+            ++packet_starts;
+            if(timeout == FIRST_TIMEOUT)
+                {
+                tries = 10;
+                packet_timeouts = 0;
+                timeout = LATER_TIMEOUT;        // once a packet has been started, set timeout shorter
+                }
+
             checksum = 0;                       // init the packet checksum
 
             for (int i = 0; i < PACKET_SIZE + 3; i++) // for each character in the packet
@@ -130,8 +142,9 @@ void xmodem_receive(uint8_t *qbuffer)
 
             if(c == -1)
                 {
+                xflush();                           // wait until the host stops sending data
                 putx(NAK);                          // on timeout request to (re)send the packet
-                ++timeouts;
+                ++char_timeouts;
                 continue;
                 }
 
@@ -187,7 +200,7 @@ void xmodem_receive(uint8_t *qbuffer)
                     {
                     SerialRaw = false;
                     printf("bad write\n");
-                    return;
+                    return -1;
                     }
                 address += QSPI_PAGE_SIZE;  // increment to the next sector address
                 qi = 0;                     // and reset the data index to the beginning of the sector buffer
@@ -204,13 +217,15 @@ void xmodem_receive(uint8_t *qbuffer)
             SerialRaw = false;
             printf("file received OK\n");
             printf("packet count = %ld\n", packet);
-            printf("timeouts = %d\n", timeouts);
+            printf("packet starts = %d\n", packet_starts);
+            printf("packet timeouts = %d\n", packet_timeouts);
+            printf("character timeouts = %d\n", char_timeouts);
             printf("badchecksum = %d\n", badchecksum);
             printf("duplicates = %d\n", duplicates);
             printf("badseq = %d\n", badseq);
             printf("outoforder = %d\n", outoforder);
             phist();
-            return;                        // Success
+            return 0;                        // Success
             }
         }
 
@@ -223,14 +238,16 @@ void xmodem_receive(uint8_t *qbuffer)
     printf("xmodem transfer failed\n");
     printf("packet count = %ld, qi = %d, checksum = %02x\n", packet, qi, checksum);
     printf("last packet = %d, expected %d\n", xbuffer[0], (int)(packet&255));
-    printf("timeouts = %d\n", timeouts);
+    printf("packet starts = %d\n", packet_starts);
+    printf("packet timeouts = %d\n", packet_timeouts);
+    printf("character timeouts = %d\n", char_timeouts);
     printf("badchecksum = %d\n", badchecksum);
     printf("duplicates = %d\n", duplicates);
     printf("badseq = %d\n", badseq);
     printf("outoforder = %d\n", outoforder);
     dump(xbuffer, PACKET_SIZE + 3);
     phist();
-    return;
+    return -1;
     }
 
 

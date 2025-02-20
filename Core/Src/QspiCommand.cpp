@@ -14,6 +14,12 @@ extern void print_status_register(uint8_t regCommand);
 
 extern "C" DRESULT QSPI_ioctl (BYTE pdrv, BYTE cmd, void *buff);
 
+void EraseQSPI()
+    {
+    printf("erasing entire SPI-NOR, this may take several minutes\n");
+    QSPI_EraseChip(&hospi1);
+    printf("erasing complete\n");
+    }
 
 void QspiCommand(char *p)
     {
@@ -68,9 +74,7 @@ void QspiCommand(char *p)
         }
     else if(p[0] == 'e' && p[1] == 'e')
         {
-        printf("erasing entire SPI-NOR, this may take several minutes\n");
-        QSPI_EraseChip(&hospi1);
-        printf("erasing complete\n");
+        EraseQSPI();
         }
     else if(p[0] == 'c')
         {
@@ -99,12 +103,19 @@ void QspiCommand(char *p)
         }
     else if(p[0] == 'x')
         {
-        int res;
-
+        extern unsigned CPU_CLOCK_FREQUENCY;
+        extern void SetClock(unsigned clk);
         extern int xmodem_receive(uint8_t *buf);
-        res = xmodem_receive((uint8_t *)&qbuf);
+
+        printf("CPU clock will be set to 250 MHz during the download\n");
+        unsigned prev_clk = CPU_CLOCK_FREQUENCY;
+        SetClock(250);                                  // 100 MHz doesn't work well for long USB packets on this processor for some unknown reason
+
+        int res = xmodem_receive((uint8_t *)&qbuf);
         if(res==0)printf("file received OK\n");
-        else printf("xmodem transfer failed %d\n", res);
+        else printf("xmodem transfer failed\n");
+
+        SetClock(prev_clk);
         }
     else
         {
