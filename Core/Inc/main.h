@@ -83,6 +83,7 @@ void Error_Handler(void);
 #define LED0_GPIO_Port GPIOC
 #define FPGA_IRQ_Pin GPIO_PIN_3
 #define FPGA_IRQ_GPIO_Port GPIOD
+#define FPGA_IRQ_EXTI_IRQn EXTI3_IRQn
 #define SPI1_NSS_Pin GPIO_PIN_10
 #define SPI1_NSS_GPIO_Port GPIOG
 

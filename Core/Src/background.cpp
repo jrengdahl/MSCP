@@ -37,6 +37,12 @@ extern Port rxPort;
 extern Port tempPort;
 extern bool waiting_for_command;
 
+extern Port FPGA_Port;
+extern bool FPGA_IRQ_flag;
+extern void FPGA_monitor();
+
+
+
 extern void interp();                           // the command line interpreter thread
 extern void temperature_monitor();
 
@@ -84,7 +90,7 @@ void background()                                       // powerup init and back
 
     QbusInit();
 
-    #pragma omp parallel num_threads(3)
+    #pragma omp parallel num_threads(4)
     if(omp_get_thread_num() == 0)                       // thread 0 runs this:
         {
         while(1)                                        // run the background polling loop
@@ -103,6 +109,14 @@ void background()                                       // powerup init and back
                 tempPort.resume((void *)now);
                 last_temp_sample = now;
                 }
+
+            // This wakes up the FPGA thread if an FPGA interrupt has occurred.
+            // The thread may or may not clear the flag. If not, keep waking the thread.
+            if(FPGA_IRQ_flag)
+                {
+                FPGA_Port.resume();
+                }
+
             }
         }
 
@@ -111,7 +125,12 @@ void background()                                       // powerup init and back
         temperature_monitor();                          // run the temperature monitor
         }
 
-    else if(omp_get_thread_num() == 2)                  // and thread 2 runs this:
+    else if(omp_get_thread_num() == 2)                  // and thread 1 runs this:
+        {
+        FPGA_monitor();                          // run the FPGA monitor
+        }
+
+    else if(omp_get_thread_num() == 3)                  // and thread 2 runs this:
         {
         interp();                                       // run the command line interpreter
         }

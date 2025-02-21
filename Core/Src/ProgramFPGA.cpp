@@ -89,6 +89,11 @@ void ProgramFPGA(char *p = 0)
     unsigned nstatus = HAL_GPIO_ReadPin(GPIONAME(NSTATUS));
 
     printf("CDONE = %d, NSTATUS = %d\n", cdone, nstatus);
+
+    void Clear_FPGA_IRQ();
+    Clear_FPGA_IRQ();
+    HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
     }
 
 
