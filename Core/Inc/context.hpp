@@ -132,6 +132,11 @@ class Context
     void start_switch1();                   // an entry point to resume after the condition is tested (for Ozone RTOS awareness)
     void start_switch2();                   // an entry point to resume after the condition is tested (for Ozone RTOS awareness)
 
+    bool isBackground()
+        {
+        return next==nullptr;
+        }
+
 
     // spawn a new thread
     template<unsigned N>
@@ -153,7 +158,6 @@ class Context
         {
         return stack[N-4] == 1;
         }
-
 
     // get a pointer to the current context
     static Context *pointer()

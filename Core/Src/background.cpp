@@ -90,52 +90,59 @@ void background()                                       // powerup init and back
 
     QbusInit();
 
+    // Spawn various threads that run continuously.
+    // None of these threads should ever terminate, so the following pragma should never terminate
+    // This powerup code becomes the initial OpenMP thread when it calls libgomp_init above. It is the root
+    // of all other threads which are created. This initial thread must become the background polling loop,
+    // which is the first section below.
+
     #pragma omp parallel num_threads(4)
-    if(omp_get_thread_num() == 0)                       // thread 0 runs this:
         {
-        while(1)                                        // run the background polling loop
+        if(omp_get_thread_num() == 0)                       // thread 0 (the master thread) must the background polling lop:
             {
-            gomp_poll_threads();                        // wake any OpenMP threads that have work to do
-
-            if(DeferFIFO)                               // if anything on the DeferFIFO
+            while(1)                                        // run the background polling loop forever
                 {
-                undefer();                              // wake any threads that called yield
-                }
+                gomp_poll_threads();                        // wake any OpenMP threads that have work to do
 
-            // this wakes up the chip temperature polling thread every 100 ms
-            uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
-            if(waiting_for_command && (now - last_temp_sample > 100000))
-                {
-                tempPort.resume((void *)now);
-                last_temp_sample = now;
-                }
+                if(DeferFIFO)                               // if anything on the DeferFIFO
+                    {
+                    undefer();                              // wake any threads that called yield
+                    }
 
-            // This wakes up the FPGA thread if an FPGA interrupt has occurred.
-            // The thread may or may not clear the flag. If not, keep waking the thread.
-            if(FPGA_IRQ_flag)
-                {
-                FPGA_Port.resume();
-                }
+                // this wakes up the chip temperature polling thread every 100 ms
+                uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
+                if(waiting_for_command && (now - last_temp_sample > 100000))
+                    {
+                    tempPort.resume((void *)now);
+                    last_temp_sample = now;
+                    }
 
+                // This wakes up the FPGA thread if an FPGA interrupt has occurred.
+                // The thread may or may not clear the flag. If not, keep waking the thread until it does.
+                if(FPGA_IRQ_flag)
+                    {
+                    FPGA_Port.resume();
+                    }
+                }
+            }
+
+        else if(omp_get_thread_num() == 1)                  // thread 1 runs this:
+            {
+            temperature_monitor();                          // run the temperature monitor
+            }
+
+        else if(omp_get_thread_num() == 2)                  // thread 2 runs this:
+            {
+            FPGA_monitor();                                 // run the FPGA monitor
+            }
+
+        else if(omp_get_thread_num() == 3)                  // thread 3 runs this:
+            {
+            interp();                                       // run the command line interpreter
             }
         }
 
-    else if(omp_get_thread_num() == 1)                  // and thread 1 runs this:
-        {
-        temperature_monitor();                          // run the temperature monitor
-        }
-
-    else if(omp_get_thread_num() == 2)                  // and thread 1 runs this:
-        {
-        FPGA_monitor();                          // run the FPGA monitor
-        }
-
-    else if(omp_get_thread_num() == 3)                  // and thread 2 runs this:
-        {
-        interp();                                       // run the command line interpreter
-        }
-
-    // neither of the above threads terminate, so the parallel never ends, and we should never get here
-    assert(false==true);                                // Woe to those who call evil good, and good evil
+    // none of the above threads terminate, so we should never get here
+    assert(false==true);                                // Woe to those who call evil good, and good evil.
     }
 
