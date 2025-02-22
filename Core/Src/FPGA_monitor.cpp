@@ -8,7 +8,8 @@
 
 extern int getline_nchar;       // When this is nonzero, the user has started typing a line on the console. It is impolite to interrupt that line.
 
-bool FPGA_IRQ_flag = false;
+Port FPGA_Port;
+
 
 void Clear_FPGA_IRQ()
     {
@@ -20,12 +21,10 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
     if (GPIO_Pin == FPGA_IRQ_Pin)
         {
         Clear_FPGA_IRQ();
-        FPGA_IRQ_flag = true;
+        FPGA_Port.resume();
         }
     }
 
-
-Port FPGA_Port;
 
 void FPGA_monitor()
     {
@@ -35,8 +34,6 @@ void FPGA_monitor()
 
         if(getline_nchar == 0)
             {
-            FPGA_IRQ_flag = false;
-
             printf("FPGA_IRQ\n");
             putchar('>');
             fflush(stdout);

@@ -37,14 +37,9 @@ extern Port rxPort;
 extern Port tempPort;
 extern bool waiting_for_command;
 
-extern Port FPGA_Port;
-extern bool FPGA_IRQ_flag;
-extern void FPGA_monitor();
-
-
-
 extern void interp();                           // the command line interpreter thread
-extern void temperature_monitor();
+extern void temperature_monitor();              // the temeraurature monitor thread
+extern void FPGA_monitor();                     // the FPGA thread
 
 uint32_t LastTimeStamp = 0;
 
@@ -96,17 +91,17 @@ void background()                                       // powerup init and back
     // of all other threads which are created. This initial thread must become the background polling loop,
     // which is the first section below.
 
-    #pragma omp parallel num_threads(4)
+    #pragma omp parallel num_threads(4)                 // the number of threads must equal the number of sections below
         {
-        if(omp_get_thread_num() == 0)                       // thread 0 (the master thread) must the background polling lop:
+        if(omp_get_thread_num() == 0)                   // thread 0 (the master thread) must the background polling lop:
             {
-            while(1)                                        // run the background polling loop forever
+            while(1)                                    // run the background polling loop forever
                 {
-                gomp_poll_threads();                        // wake any OpenMP threads that have work to do
+                gomp_poll_threads();                    // wake any OpenMP threads that have work to do
 
-                if(DeferFIFO)                               // if anything on the DeferFIFO
+                if(DeferFIFO)                           // if anything on the DeferFIFO
                     {
-                    undefer();                              // wake any threads that called yield
+                    undefer();                          // wake any threads that called yield
                     }
 
                 // this wakes up the chip temperature polling thread every 100 ms
@@ -116,29 +111,22 @@ void background()                                       // powerup init and back
                     tempPort.resume((void *)now);
                     last_temp_sample = now;
                     }
-
-                // This wakes up the FPGA thread if an FPGA interrupt has occurred.
-                // The thread may or may not clear the flag. If not, keep waking the thread until it does.
-                if(FPGA_IRQ_flag)
-                    {
-                    FPGA_Port.resume();
-                    }
                 }
             }
 
-        else if(omp_get_thread_num() == 1)                  // thread 1 runs this:
+        else if(omp_get_thread_num() == 1)              // thread 1 runs this:
             {
-            temperature_monitor();                          // run the temperature monitor
+            temperature_monitor();                      // run the temperature monitor
             }
 
-        else if(omp_get_thread_num() == 2)                  // thread 2 runs this:
+        else if(omp_get_thread_num() == 2)              // thread 2 runs this:
             {
-            FPGA_monitor();                                 // run the FPGA monitor
+            FPGA_monitor();                             // run the FPGA monitor
             }
 
-        else if(omp_get_thread_num() == 3)                  // thread 3 runs this:
+        else if(omp_get_thread_num() == 3)              // thread 3 runs this:
             {
-            interp();                                       // run the command line interpreter
+            interp();                                   // run the command line interpreter
             }
         }
 
