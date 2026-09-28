@@ -90,52 +90,51 @@ void background()                                       // powerup init and back
 
     QbusInit();
 
-    #pragma omp parallel num_threads(4)
-    if(omp_get_thread_num() == 0)                       // thread 0 runs this:
+    // Spawn various threads that run continuously
+    // each section is a separate parallel thread
+    // none of these threads should ever terminate, so the sections pragma should never terminate
+    #pragma omp parallel sections
         {
-        while(1)                                        // run the background polling loop
-            {
-            gomp_poll_threads();                        // wake any OpenMP threads that have work to do
 
-            if(DeferFIFO)                               // if anything on the DeferFIFO
+        // this is the background polling loop
+        #pragma omp section
+            while(1)                                        // run the background polling loop
                 {
-                undefer();                              // wake any threads that called yield
+                gomp_poll_threads();                        // wake any OpenMP threads that have work to do
+
+                if(DeferFIFO)                               // if anything on the DeferFIFO
+                    {
+                    undefer();                              // wake any threads that called yield
+                    }
+
+                // this wakes up the chip temperature polling thread every 100 ms
+                uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
+                if(waiting_for_command && (now - last_temp_sample > 100000))
+                    {
+                    tempPort.resume((void *)now);
+                    last_temp_sample = now;
+                    }
+
+                // This wakes up the FPGA thread if an FPGA interrupt has occurred.
+                // The thread may or may not clear the flag. If not, keep waking the thread.
+                if(FPGA_IRQ_flag)
+                    {
+                    FPGA_Port.resume();
+                    }
                 }
 
-            // this wakes up the chip temperature polling thread every 100 ms
-            uint32_t now = __HAL_TIM_GET_COUNTER(&htim2);
-            if(waiting_for_command && (now - last_temp_sample > 100000))
-                {
-                tempPort.resume((void *)now);
-                last_temp_sample = now;
-                }
+        #pragma omp section
+            temperature_monitor();                      // run the temperature monitor
 
-            // This wakes up the FPGA thread if an FPGA interrupt has occurred.
-            // The thread may or may not clear the flag. If not, keep waking the thread.
-            if(FPGA_IRQ_flag)
-                {
-                FPGA_Port.resume();
-                }
+        #pragma omp section
+            FPGA_monitor();                             // run the FPGA monitor
 
-            }
+        #pragma omp section
+            interp();                                   // run the command line interpreter
+
         }
 
-    else if(omp_get_thread_num() == 1)                  // and thread 1 runs this:
-        {
-        temperature_monitor();                          // run the temperature monitor
-        }
-
-    else if(omp_get_thread_num() == 2)                  // and thread 1 runs this:
-        {
-        FPGA_monitor();                          // run the FPGA monitor
-        }
-
-    else if(omp_get_thread_num() == 3)                  // and thread 2 runs this:
-        {
-        interp();                                       // run the command line interpreter
-        }
-
-    // neither of the above threads terminate, so the parallel never ends, and we should never get here
-    assert(false==true);                                // Woe to those who call evil good, and good evil
+    // none of the above threads terminate, so the "sections" never ends, and we should never get here
+    assert(false==true);                                // Woe to those who call evil good, and good evil.
     }
 

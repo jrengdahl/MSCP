@@ -45,6 +45,13 @@ omp_thread omp_threads[GOMP_MAX_NUM_THREADS];
 // A pool of idle threads
 static FIFO<omp_thread *, GOMP_MAX_NUM_THREADS> thread_pool;
 
+// an array of workshares
+static workshare workshares[GOMP_NUM_WORKSHARE];
+
+// A pool of idle workshares
+static FIFO<workshare *, GOMP_NUM_WORKSHARE> workshare_pool;
+
+
 
 int dyn_var = 0;
 
@@ -184,6 +191,9 @@ void libgomp_init()
     // put all tasks into the idle task pool
     for(auto &task: tasks)task_pool.add(&task);
 
+    // put all workshares into the idle workshare pool
+    for(auto &workshare: workshares)workshare_pool.add(&workshare);
+
     // init the omp_threads
     // put all threads except 0 (background) into the idle thread pool and start each one
     for(unsigned i=0; i<GOMP_MAX_NUM_THREADS; i++)
@@ -231,10 +241,11 @@ void libgomp_init()
 
 
 extern "C"
-void GOMP_parallel(
+void GOMP_parallel_sections(
     TASKFN *fn,                                     // the context code
     char *data,                                     // the context local data
     unsigned num_threads,                           // the requested number of threads
+	unsigned num_sections,							// the number of sections
     unsigned flags __attribute__((__unused__)))     // flags (ignored for now)
     {
     omp_thread &team = *omp_this_thread();
@@ -246,9 +257,22 @@ void GOMP_parallel(
 
     team.mutex = false;
     team.tsingle = 0;
-    team.sections_count = 0;
-    team.sections = 0;
-    team.section= 0;
+    if(num_sections)                                // make it look as if every thread has called GOMP_section_start, since when "#pragma omp parallel sections" is used, GOMP_section_start doesn't get called
+        {
+        if(!workshare_pool.take(&team.ws))
+            {
+            printf("workshare_pool is empty\n");
+            assert(false);
+            }
+
+        team.ws->sections_count = num_threads;
+        team.ws->sections = num_sections;
+        team.ws->section = 1;
+       	}
+    else
+    	{
+        team.ws = 0;
+    	}
     team.copyprivate = 0;
     team.team_count = 0;
     team.task_count = 0;
@@ -318,9 +342,25 @@ void GOMP_parallel(
     while(true)
         {
         omp_thread *thread;
+
         if(!team.members.take(thread))break;
         thread_pool.add(thread);
         }
+    }
+
+
+// GOMP_parallel and GOMP_parallel_sections are identical except:
+// GOMP_parallel_sections gets passed one additional parameter, the section count
+// GOMP_parallel_sections initializes the section count and next section number to nonzero in the team struct
+
+extern "C"
+void GOMP_parallel(
+    TASKFN *fn,                                     // the context code
+    char *data,                                     // the context local data
+    unsigned num_threads,                           // the requested number of threads
+    unsigned flags __attribute__((__unused__)))     // flags (ignored for now)
+    {
+    GOMP_parallel_sections(fn, data, num_threads, 0, flags);
     }
 
 
@@ -518,6 +558,24 @@ void GOMP_sections_end()                // each thread runs this once when all t
         team.sections_count = 0;        // re-arm the sections start, though note that some may still be in a section
         }
 
+    GOMP_barrier();                     // hold everyone here until all have arrived
+    }
+
+extern "C"
+void GOMP_sections_end_nowait()         // each thread in a nowait sections runs this once when all the sections have been executed
+    {
+    omp_thread &team = *omp_this_team();
+    int num = omp_get_num_threads();
+
+    if(team.sections_count == num)      // if all team members have encountered the "start"
+        {
+        team.sections_count = 0;        // re-arm the sections start, though note that some may still be in a section
+        }
+
+// TODO this function should not have a barrier here.
+// However, it if necessary to prevent re-use of the section variables in the team
+// structure in the event that a nowait sections block is followed by another sections block.
+// Eventually this should be fixed.
     GOMP_barrier();                     // hold everyone here until all have arrived
     }
 
