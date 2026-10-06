@@ -37,14 +37,9 @@ extern Port rxPort;
 extern Port tempPort;
 extern bool waiting_for_command;
 
-extern Port FPGA_Port;
-extern bool FPGA_IRQ_flag;
-extern void FPGA_monitor();
-
-
-
 extern void interp();                           // the command line interpreter thread
-extern void temperature_monitor();
+extern void temperature_monitor();              // the temeraurature monitor thread
+extern void FPGA_monitor();                     // the FPGA thread
 
 uint32_t LastTimeStamp = 0;
 
@@ -113,13 +108,6 @@ void background()                                       // powerup init and back
                     {
                     tempPort.resume((void *)now);
                     last_temp_sample = now;
-                    }
-
-                // This wakes up the FPGA thread if an FPGA interrupt has occurred.
-                // The thread may or may not clear the flag. If not, keep waking the thread.
-                if(FPGA_IRQ_flag)
-                    {
-                    FPGA_Port.resume();
                     }
                 }
 

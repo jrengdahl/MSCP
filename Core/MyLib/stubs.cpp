@@ -48,6 +48,3 @@ void exit( int exit_code UNUSED)
     assert(false);
     }
 
-int __errno = 0;
-
-

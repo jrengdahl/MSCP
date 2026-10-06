@@ -59,7 +59,7 @@ int dyn_var = 0;
 static int gomp_nthreads_var = OMP_NUM_THREADS;
 
 int omp_verbose = OMP_VERBOSE_DEFAULT;
-#define DPRINT(level) if(omp_verbose>=level)printf
+#define DPRINT(level) if(!omp_this_thread()->context.isBackground() && omp_verbose>=level)printf
 
 // either run the implicit task, or try to get one from the pool of ready tasks
 // TODO -- each team needs its own private ready task pool
@@ -259,7 +259,7 @@ void GOMP_parallel_sections(
     team.tsingle = 0;
     if(num_sections)                                // make it look as if every thread has called GOMP_section_start, since when "#pragma omp parallel sections" is used, GOMP_section_start doesn't get called
         {
-        if(!workshare_pool.take(&team.ws))
+        if(!workshare_pool.take(team.ws))
             {
             printf("workshare_pool is empty\n");
             assert(false);
@@ -512,6 +512,21 @@ void GOMP_single_copy_end(void *data)
 
 
 
+// this is almost identical to GOMP_parallel for now
+
+extern "C"
+void GOMP_parallel_sections(
+    TASKFN *fn,                                     // the context code
+    char *data,                                     // the context local data
+    unsigned num_threads,                           // the requested number of threads
+    unsigned count,                                 // the number of sections
+    unsigned flags __attribute__((__unused__)))     // flags (ignored for now)
+    {
+    GOMP_parallel(fn, data, count, flags);
+    }
+
+
+// each time this is called it returns the number of the next section to be executed.
 
 extern "C"
 int GOMP_sections_next()                // for each thread that iterates the "sections"
@@ -548,20 +563,6 @@ int GOMP_sections_start(int num)        // each team member calls this once at t
     }
 
 extern "C"
-void GOMP_sections_end()                // each thread runs this once when all the sections hae been executed
-    {
-    omp_thread &team = *omp_this_team();
-    int num = omp_get_num_threads();
-
-    if(team.sections_count == num)      // if all team members have encountered the "start"
-        {
-        team.sections_count = 0;        // re-arm the sections start, though note that some may still be in a section
-        }
-
-    GOMP_barrier();                     // hold everyone here until all have arrived
-    }
-
-extern "C"
 void GOMP_sections_end_nowait()         // each thread in a nowait sections runs this once when all the sections have been executed
     {
     omp_thread &team = *omp_this_team();
@@ -573,9 +574,16 @@ void GOMP_sections_end_nowait()         // each thread in a nowait sections runs
         }
 
 // TODO this function should not have a barrier here.
-// However, it if necessary to prevent re-use of the section variables in the team
+// However, it is necessary to prevent re-use of the section variables in the team
 // structure in the event that a nowait sections block is followed by another sections block.
 // Eventually this should be fixed.
+    GOMP_barrier();                     // hold everyone here until all have arrived
+    }
+
+extern "C"
+void GOMP_sections_end()                // each thread runs this once when all the sections have been executed
+    {
+    GOMP_sections_end_nowait();
     GOMP_barrier();                     // hold everyone here until all have arrived
     }
 

@@ -15,7 +15,7 @@
 #define GOMP_MAX_NUM_THREADS 8
 #define GOMP_NUM_TEAMS 4
 #define GOMP_NUM_TASKS 16
-#define GOP_NUM_WORKSHARE 16
+#define GOMP_NUM_WORKSHARE 16
 
 #define OMP_NUM_THREADS 4
 
@@ -65,7 +65,7 @@ struct omp_thread
     unsigned single = 0;    // used to detect the first thread to arrive at a "single"
     bool arrived = false;   // arrived at a barrier, waiting for other threads to arrive
     bool mwaiting = false;  // waiting on a mutex
-    bool twaiting = false;   // indicates when a thread is waiting for a task. Not affected by wait for event, etc.
+    bool twaiting = false;  // indicates when a thread is waiting for a task. Not affected by wait for event, etc.
 
     // stuff pertaining to this thread as a team master
     int team_count = 0;

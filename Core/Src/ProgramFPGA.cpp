@@ -92,6 +92,7 @@ void ProgramFPGA(char *p = 0)
 
     void Clear_FPGA_IRQ();
     Clear_FPGA_IRQ();
+    __HAL_GPIO_EXTI_CLEAR_IT(FPGA_IRQ_Pin);
     HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
     }
