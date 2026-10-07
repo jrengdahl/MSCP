@@ -16,6 +16,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 #include <omp.h>
 #include "main.h"
 #include "FIFO.hpp"
@@ -512,20 +513,6 @@ void GOMP_single_copy_end(void *data)
 
 
 
-// this is almost identical to GOMP_parallel for now
-
-extern "C"
-void GOMP_parallel_sections(
-    TASKFN *fn,                                     // the context code
-    char *data,                                     // the context local data
-    unsigned num_threads,                           // the requested number of threads
-    unsigned count,                                 // the number of sections
-    unsigned flags __attribute__((__unused__)))     // flags (ignored for now)
-    {
-    GOMP_parallel(fn, data, count, flags);
-    }
-
-
 // each time this is called it returns the number of the next section to be executed.
 
 extern "C"
@@ -533,17 +520,17 @@ int GOMP_sections_next()                // for each thread that iterates the "se
     {
     omp_thread &team = *omp_this_team();
 
-    if(team.section > team.sections)    // if all sections have been executed
+    if(team.ws->section > team.ws->sections)    // if all sections have been executed
         {
-        team.section = 0;               // clear the index, it latches at zero
+        team.ws->section = 0;               // clear the index, it latches at zero
         }
 
-    if(team.section == 0)               // if all sections have been run
+    if(team.ws->section == 0)               // if all sections have been run
         {
         return 0;                       // return 0, select the "end" action and stop iterating
         }
 
-    return team.section++;          // otherwise return the current index and increment it
+    return team.ws->section++;          // otherwise return the current index and increment it
     }
 
 extern "C"
@@ -551,13 +538,13 @@ int GOMP_sections_start(int num)        // each team member calls this once at t
     {
     omp_thread &team = *omp_this_team();
 
-    if(team.sections_count == 0)        // when the first context gets here
+    if(team.ws->sections_count == 0)        // when the first context gets here
         {
-        team.sections = num;            // capture the number of sections
-        team.section = 1;               // init to the first section
+        team.ws->sections = num;            // capture the number of sections
+        team.ws->section = 1;               // init to the first section
         }
 
-    ++team.sections_count;              // count the number of threads that have started the sections
+    ++team.ws->sections_count;              // count the number of threads that have started the sections
 
     return GOMP_sections_next();        // for the rest, start is the same as next
     }
@@ -568,9 +555,9 @@ void GOMP_sections_end_nowait()         // each thread in a nowait sections runs
     omp_thread &team = *omp_this_team();
     int num = omp_get_num_threads();
 
-    if(team.sections_count == num)      // if all team members have encountered the "start"
+    if(team.ws->sections_count == num)      // if all team members have encountered the "start"
         {
-        team.sections_count = 0;        // re-arm the sections start, though note that some may still be in a section
+        team.ws->sections_count = 0;        // re-arm the sections start, though note that some may still be in a section
         }
 
 // TODO this function should not have a barrier here.
