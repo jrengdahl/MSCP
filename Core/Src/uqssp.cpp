@@ -144,7 +144,7 @@ void Qinit()
     rsp_fifo.size = 1 << ((s1>>8)&7);                                                // compute response FIFO size in longs
     cmd_fifo.size = 1 << ((s1>>11)&7);                                               // compute command FIFO size
     rsp_fifo.addr = (uint32_t)(s2 & 0xFFFE) | ((uint32_t)(s3 & 0x7FFF) << 16) ;      // compute resp FIFO address
-    cmd_fifo.addr = rsp_fifo.addr + rsp_fifo.size*4;                                            // compute command FIFO address
+    cmd_fifo.addr = rsp_fifo.addr + rsp_fifo.size*4;                                 // compute command FIFO address
     rsp_fifo.flag = rsp_fifo.addr - 2;
     cmd_fifo.flag = rsp_fifo.addr - 4;
     rsp_fifo.index = 0;

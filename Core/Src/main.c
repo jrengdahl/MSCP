@@ -130,7 +130,7 @@ int main(void)
   extern void vcp_init();
   vcp_init();
 
-  /* start TIM2, whihc is used for the 1 usec clock */
+  /* start TIM2, which is used for the 1 usec clock */
   HAL_TIM_Base_Start(&htim2);
 
   extern void background();

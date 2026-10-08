@@ -16,6 +16,8 @@ extern uint32_t qbuf[512/4];
 
 void DiffCommand(char *p)
     {
+    uint8_t *buf1 = &((uint8_t *)&qbuf)[0];
+    uint8_t *buf2 = &((uint8_t *)&qbuf)[32];
     char *path1 = p;
     skip(&p);
     p[-1] = 0;
@@ -42,24 +44,24 @@ void DiffCommand(char *p)
         }
 
     DWORD offset = 0;
-    UINT br1, br2;
+    UINT br1, br2;    // bytes read for file 1 and 2
 
 
-    // Compare the files byte by byte
+    // Compare the files byte by byte, reading them in 16 byte chunks.
     while (1)
         {
         // Read a chunk from each file
-        res = f_read(&f1, (uint8_t *)&qbuf[0], 16, &br1);
+        res = f_read(&f1, buf1, 16, &br1);
         if (res != FR_OK)
             {
-            printf("Failed to read from file: %s\n", path1);
+            printf("Failed to read from file: %s at offset %ld\n", path1,offset);
             break;
             }
 
-        res = f_read(&f2, (uint8_t *)&qbuf[32], 16, &br2);
+        res = f_read(&f2, buf2, 16, &br2);
         if (res != FR_OK)
             {
-            printf("Failed to read from file: %s\n", path2);
+            printf("Failed to read from file: %s at offset %ld\n", path2, offset);
             break;
             }
 
@@ -70,27 +72,26 @@ void DiffCommand(char *p)
             break;
             }
 
-        // If both br1 and br2 are 0, we've reached the end of both files
+        // If br1 and br2 differ the files are of different lengths
         if (br1 != br2)
             {
-            printf("Files have different length: %d %d\n", br1, br2);
-            dump(&qbuf[0], 16);
-            dump(&qbuf[32], 16);
+            printf("Files have different length: %ld %ld\n", offset+br1, offset+br2);
+            dump(buf1, br1);
+            dump(buf2, br2);
             break;
             }
-
 
         bool diff = false;
         // Compare the chunks
         for (unsigned i = 0; i < br1; i++)
             {
-            if (qbuf[i] != qbuf[32+i])
+            if (buf1[i] != buf2[i])
                 {
                 // Found a difference
                 diff = true;
                 printf("Difference found at offset: %lu\n", offset + i);
-                dump(&qbuf[0], 16);
-                dump(&qbuf[32], 16);
+                dump(buf1, br1);
+                dump(buf2, br2);
                 break;
                 }
             }

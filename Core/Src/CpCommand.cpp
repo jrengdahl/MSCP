@@ -22,6 +22,7 @@ void CpCommand(char *p)
 
     FIL src_file, dst_file;
     FRESULT res;
+    FRESULT res2;
     UINT br, bw;
 
     // Open the source file
@@ -60,8 +61,16 @@ void CpCommand(char *p)
         }
 
     // Close both files
-    f_close(&src_file);
-    f_close(&dst_file);
+    res2 = f_close(&src_file);
+    if (res2 != FR_OK)
+        {
+        printf("error on src file close = %d\n", res2);
+        }
+    res2 = f_close(&dst_file);
+    if (res2 != FR_OK)
+        {
+        printf("error on dst file close = %d\n", res2);
+        }
 
     // Check if the loop exited due to an error
     if (res != FR_OK)

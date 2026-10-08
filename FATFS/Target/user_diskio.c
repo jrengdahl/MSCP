@@ -202,8 +202,8 @@ DRESULT QSPI_ioctl (
     case GET_SECTOR_SIZE:
         *(WORD *)buff = QSPI_LBA_SIZE;
         return RES_OK;
-    case GET_BLOCK_SIZE:
-        *(DWORD *)buff = QSPI_BLOCK_SIZE;
+    case GET_BLOCK_SIZE: // return block size in sectors
+        *(DWORD *)buff = QSPI_BLOCK_SIZE/512;
         return RES_OK;
     default:
         return RES_PARERR;
