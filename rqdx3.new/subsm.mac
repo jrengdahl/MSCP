@@ -1,0 +1,202 @@
+	.title	subsm
+	.ident	/01/
+;
+; file = SUBSM.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+; miscellaneous routines
+;
+
+ps7	=	340
+
+pe$nsr	=	478.
+
+	.psect	c$code
+
+;
+; convert an LBN to a PBN and put the results into the right slots
+;
+; we take advantage of the fact that all divisors are 16 bits; we do division
+; by subtracting and shifting only, counting the number of subtractions
+; required to reduce the dividend to a suitable remainder
+;
+.globl calc_pbn
+calc_pbn::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r4		; get TCB address
+	mov	t$ucb(r4),r3		; from the UCB, get divisor
+	mov	u$sec(r3),r2		; (number of sectors per track)
+	mov	t$block+0(r4),r1	; get high part of LBN
+	mov	t$block+2(r4),r0	; get low part of LBN
+	mov	#16.,r3			; get loop count
+100$:	asl	r0			; shift left
+	rol	r1			;
+	beq	110$			; don't bother trying to subtract
+	cmp	r1,r2			; does it go?
+	blo	110$			; nope
+	sub	r2,r1			; do the subtraction
+	inc	r0			; and count it
+110$:	sob	r3,100$			; one iteration done
+;
+; r1 = remainder, stick it into TCB_sector
+;
+	mov	r1,t$sector(r4)		; save sector number
+	mov	t$ucb(r4),r3		; from the UCB, get divisor
+	mov	u$sur(r3),r2		; (number of surfaces per unit)
+	clr	r1			; start out fresh this time
+	mov	#16.,r3			; get loop count
+120$:	asl	r0			; shift left
+	rol	r1			;
+	beq	130$			; don't bother trying to subtract
+	cmp	r1,r2			; does it go?
+	blo	130$			; nope
+	sub	r2,r1			; do the subtraction
+	inc	r0			; and count it
+130$:	sob	r3,120$			; one iteration done
+;
+; r1 = remainder, stick it into TCB_surface
+;
+	mov	r1,t$surface(r4)	; save surface number
+;
+; r0 = quotient, stick it into TCB_cylinder
+;
+	mov	r0,t$cylinder(r4)	; save cylinder number
+	mov	t$ucb(r4),r3		; get UCB address
+	sub	u$cur_cyl(r3),r0	; get cylinder delta amount
+	bge	140$			;
+	neg	r0			;
+140$:	cmp	#5,r0			; is it a large seek?
+	bge	150$			; nope
+	mov	r4,(sp)			; yep, do a separate seek for it
+	jsr	pc,seek			;
+150$:	mov	t$cylinder(r4),u$cur_cyl(r3) ; remember where we are
+	jmp	cret$			; all done
+
+;
+; given a unit number, return the address of the associated UCB (or NULL)
+;
+; note that this routine always updates the "offline" and "write protect"
+; states; further, if a unit has just left the "offline" state, a UNIT NOW
+; AVAILABLE attention message is generated
+;
+.globl get_ucb
+get_ucb::
+	mov	2(sp),r0		; get unit number
+	sub	unit_base,r0		; subtract artificial bias
+	blt	190$			; no good
+	cmp	#3,r0			; check again
+	blt	190$			; sorry, charlie
+	asl	r0			; make it a word index
+	mov	ucbs(r0),r0		; return the right value
+	beq	200$			; no unit here
+	mov	r0,2(sp)		; save for a bit
+	bit	#us$rx,u$state(r0)	; is this a floppy?
+	bne	140$			; yep
+	bit	u$wp_bit(r0),fps	; write protected?
+	beq	110$			; nope
+100$:	bis	#20000,u$flags(r0)	; set hardware write protected
+	br	120$			;
+110$:	bic	#20000,u$flags(r0)	; clear hardware write protected
+120$:	bit	#us$unk,u$state(r0)	; is the media format known yet?
+	beq	130$			; yep
+	mov	r0,-(sp)		; attempt to set it
+	jsr	pc,rd_media		;
+	tst	(sp)+			;
+	mov	2(sp),r0		; restore ucb address
+	bit	#us$unk,u$state(r0)	; did it work?
+	bne	170$			; nope
+130$:	bit	u$rs_bit(r0),fps	; ready?
+	beq	180$			; yep
+	br	170$			; nope
+140$:	mov	r0,-(sp)		; get disk status for this guy
+	jsr	pc,get_disk		;
+	tst	(sp)+			;
+	mov	r0,r1			; put it here
+	mov	2(sp),r0		; and restore ucb address
+	bit	#1,r1			; write protected?
+	beq	150$			; nope
+	bis	#20000,u$flags(r0)	; set hardware write protected
+	br	160$			;
+150$:	bic	#20000,u$flags(r0)	; clear hardware write protected
+160$:	bit	#2,r1			; ready?
+	bne	180$			; yep
+170$:	bic	#us$onl!us$imf,u$state(r0) ; set offline
+	bis	#us$ofl,u$state(r0)	;
+	br	200$			;
+180$:	bit	#us$ofl,u$state(r0)	; was it previously offline?
+	beq	200$			; nope
+	bic	#us$ofl,u$state(r0)	; clear offline
+	mov	r0,-(sp)		; and send attention message
+	jsr	pc,do_una		;
+	tst	(sp)+			;
+	mov	2(sp),r0		;
+	br	200$			;
+190$:	clr	r0			; show failure
+200$:	rts	pc			; return
+
+;
+; given the address of a list and a list element, add the list element to the
+; head of the list
+;
+.globl $enq_head
+$enq_head::
+	mov	(sp),-(sp)		; rearrange return address
+	mfps	2(sp)			; get current priority
+	mtps	#ps7			; raise ours for now
+	mov	4(sp),r1		; get queue header
+	mov	6(sp),r0		; and an element to put into it
+	mov	(r1),(r0)		; fix up links
+	mov	r0,(r1)			;
+	rti				; return and lower priority
+
+;
+; given the address of a list and a list element, add the list element to the
+; tail of the list
+;
+.globl $enq_tail
+$enq_tail::
+	mov	(sp),-(sp)		; rearrange return address
+	mfps	2(sp)			; get current priority
+	mtps	#ps7			; raise ours for now
+	mov	4(sp),r1		; get queue header
+	mov	6(sp),r0		; and an element to put into it
+100$:	tst	(r1)			; found the end?
+	beq	110$			; nope
+	mov	(r1),r1			; follow the chain
+	br	100$			; and try again
+110$:	clr	(r0)			; fix up links
+	mov	r0,(r1)			;
+	rti				; return and lower priority
+
+;
+; given the address of a list, remove a list element and return it
+;
+.globl $deq_head
+$deq_head::
+	mfps	r1			; get current priority
+	mtps	#ps7			; raise ours for now
+	mov	@2(sp),r0		; get an element from queue header
+	beq	100$			; there was none
+	mov	(r0),@2(sp)		; fix up links
+100$:	mtps	r1			; lower priority
+	rts	pc			; and return
+
+;
+; given the address of a list, remove a list element and return it (if null,
+; that's a fatal error)
+;
+.globl $deqf_head
+$deqf_head::
+	mfps	r1			; get current priority
+	mtps	#ps7			; raise ours for now
+	mov	@2(sp),r0		; get an element from queue header
+	beq	100$			; there was none
+	mov	(r0),@2(sp)		; fix up links
+	mtps	r1			; lower priority
+	rts	pc			; and return
+
+100$:	mov	#pe$nsr,-(sp)		; no such resource
+	jsr	pc,fatal_error		;
+
+	.end

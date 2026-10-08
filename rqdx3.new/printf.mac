@@ -1,0 +1,338 @@
+	.title	printf
+	.ident	/01/
+
+	.enabl	lc
+
+	.psect	c$data
+
+lastc:	.blkw	1
+
+	.psect	c$code
+
+pow10b:
+	.word	035632,145000		; 10 ** 9
+	.word	002765,160400		; 10 ** 8
+	.word	000230,113200		; 10 ** 7
+	.word	000017,041100		; 10 ** 6
+	.word	000001,103240		; 10 ** 5
+	.word	000000,023420		; 10 ** 4
+	.word	000000,001750		; 10 ** 3
+	.word	000000,000144		; 10 ** 2
+	.word	000000,000012		; 10 ** 1
+pow10e:
+
+ljust	=	-10			; left justification flag
+prec	=	ljust-2			; precision
+width	=	prec-2			; width
+fill	=	width-2			; fill character
+high	=	fill-2			; high order bits
+low	=	high-2			; low order bits
+buffer	=	low-20			; temporary buffer
+oldptr	=	buffer-2		; last pointer
+stack	=	ljust-oldptr+2		; size needed
+
+	.psect	c$code
+
+.globl printf
+printf::
+	bit	#177400,@#160112
+	bne	1$
+	bit	#10,@#160112
+	bne	2$
+1$:	rts	pc
+2$:	jsr	r5,csv$			; save registers
+	sub	#stack,sp		; get temporary space
+	mov	4(r5),r3		; move format address to r3
+	mov	r5,r4			; move address of arguments to r4
+	add	#6,r4			;
+;
+; get next character from the format string; if not a %, just print it
+;
+loop:
+	movb	(r3)+,r0		; get a byte
+	bne	100$			; branch if not end of string
+	jmp	cret$			; if so, return
+100$:	cmpb	r0,#'%			; is it "%"?
+	beq	110$			; yep, something special
+	jsr	pc,$$putc		; else just print it
+	br	loop			; and loop
+;
+; get widths and flags
+;
+110$:	clr	ljust(r5)		; clear flags and widths
+	clr	width(r5)		;
+	mov	#-1,prec(r5)		; infinite precision
+	movb	#' ,fill(r5)		; fill with spaces
+	movb	(r3)+,r0		; get first character
+	cmpb	r0,#'-			; is it "-"?
+	bne	120$			; nope
+	inc	ljust(r5)		; it is, remember it
+	movb	(r3)+,r0		; and get a character to replace it
+120$:	cmpb	r0,#'0			; is it "0"?
+	bne	130$			; nope
+	movb	#'0,fill(r5)		; it is, remember it
+	movb	(r3)+,r0		; and get a character to replace it
+130$:	jsr	pc,getnum		; get the number which is there
+	mov	r1,width(r5)		; and remember it
+	cmpb	r0,#'.			; is there a precision specified?
+	bne	140$			; nope
+	movb	(r3)+,r0		; yep, get it
+	jsr	pc,getnum		;
+	mov	r1,prec(r5)		; and remember it
+;
+; get the data -- if there is an l in the format, copy a long to high and
+; low; otherwise, copy the integer to low and sign extend if %d
+;
+140$:	mov	r4,oldptr(r5)		; remember where we are
+	mov	(r4)+,r1		; get the argument
+	cmpb	r0,#'l			; is it long?
+	bne	150$			; nope
+	mov	r1,high(r5)		; the first part is the high order
+	mov	(r4)+,low(r5)		; next is the low order
+	movb	(r3)+,r0		; get a replacement for this one
+	br	170$			;
+150$:	cmpb	r0,#'d			; sign-extend or zero-extend?
+	beq	160$			;
+	mov	r1,low(r5)		; zero-extend is required
+	clr	high(r5)		;
+	br	170$			;
+160$:	clr	high(r5)		; sign-extend is required
+	mov	r1,low(r5)		;
+	bpl	170$			;
+	com	high(r5)		;
+;
+; %c -- process a character
+;
+170$:	cmpb	r0,#'c			; is it "c"?
+	bne	180$			; nope
+	mov	r5,r2			; compute address of the character
+	add	#low,r2			;
+	clrb	low+1(r5)		; keep only eight bits
+	br	output			; send it out
+;
+; %s -- process a string
+;
+180$:	cmpb	r0,#'s			; is it "s"?
+	bne	190$			; nope
+	mov	low(r5),r2		; get its address
+	bne	output			; send it out if it exists
+	jmp	loop			; else just ignore it
+;
+; %d, %o, %x, %X -- process integers
+;
+190$:	cmpb	r0,#'d			; is it "d"?
+	beq	200$			; yep
+	cmpb	r0,#'o			; is it "o"?
+	beq	200$			; yep
+	cmpb	r0,#'x			; is it "x"?
+	beq	200$			; yep
+	cmpb	r0,#'X			; is it "X"?
+	bne	210$			; nope
+200$:	mov	r5,r2			; get an output buffer
+	add	#buffer,r2		;
+	mov	low(r5),-(sp)		; call the common conversion routine
+	mov	high(r5),-(sp)		;
+	mov	r0,-(sp)		;
+	mov	r2,-(sp)		;
+	jsr	pc,$$ltoa		;
+	add	#10,sp			;
+	br	output			; send it out
+;
+; none of the above -- restore argument pointer so nothing gets eaten
+;
+210$:	mov	oldptr(r5),r4		; restore old pointer
+	jsr	pc,$$putc		; send out the character
+	jmp	loop			; loop around
+;
+; send out the asciz string pointed to by r2; insert any fills and pads
+;
+output:
+	mov	r2,r1			; find string length
+100$:	tstb	(r1)+			;
+	bne	100$			;
+	dec	r1			;
+	sub	r2,r1			;
+	tst	prec(r5)		; infinite precision needed?
+	bmi	110$			; yep
+	cmp	prec(r5),r1		; get minimum of length and precision
+	bhis	110$			;
+	mov	prec(r5),r1		;
+110$:	mov	r1,prec(r5)		; save it
+	tst	ljust(r5)		; is it left justfied?
+	bne	120$			; yep
+	jsr	pc,fills		; pad it out
+120$:	mov	prec(r5),r1		; write out this many characters
+130$:	dec	r1			; do another one?
+	bmi	140$			; nope
+	movb	(r2)+,r0		; yep
+	jsr	pc,$$putc		; print it out
+	br	130$			; and loop
+140$:	tst	ljust(r5)		; is it right justified?
+	beq	150$			; yep
+	jsr	pc,fills		; pad it out
+150$:	jmp	loop			; all done
+
+;
+; output ( width - prec ) copies of the fill character
+;
+fills:
+	mov	width(r5),r1		; compute how many to do
+	sub	prec(r5),r1		;
+	ble	110$			; none
+	movb	fill(r5),r0		; get the fill character
+100$:	jsr	pc,$$putc		; print it out
+	dec	r1			; count it
+	bne	100$			; and loop until done
+110$:	rts	pc			;
+
+;
+; read in a field width; the first character of the width is in r0.
+; the width is returned in r1.  if the width specifier is * or ? then the
+; width is obtained from the argument list
+;
+getnum:
+	cmpb	r0,#'*			; is it "*"?
+	beq	100$			; yep
+	cmpb	r0,#'?			; is it "?"?
+	bne	110$			; nope
+100$:	mov	(r4)+,r1		; get the number from the arguments
+	movb	(r3)+,r0		; fetch the next character
+	br	130$			; all done
+110$:	clr	r1			; build the number here
+120$:	cmpb	r0,#'0			; make sure it is a valid digit
+	blo	130$			;
+	cmpb	r0,#'9			;
+	bhi	130$			;
+	asl	r1			; it is, multiply old by ten...
+	mov	r1,-(sp)		;
+	asl	r1			;
+	asl	r1			;
+	add	(sp)+,r1		;
+	add	r0,r1			; and add new
+	sub	#'0,r1			; remove ascii-ness
+	movb	(r3)+,r0		; get another byte
+	br	120$			; and loop
+130$:	rts	pc			;
+
+.globl $$ltoa
+$$ltoa::
+	jsr	r5,csv$			; save register set
+	mov	4(r5),r4		; get buffer pointer
+	mov	10(r5),r2		; get long value
+	mov	12(r5),r3		;
+	clr	-(sp)			; clear flag
+	cmpb	6(r5),#'d		; decimal desired?
+	beq	dec			; yep
+;
+; do octal and hexadecimal here
+;
+oct:
+hex:
+	mov	#8.,r1
+	cmpb	6(r5),#'o
+	bne	100$
+	mov	#11.,r1
+	clr	r0
+	br	110$
+100$:	clr	r0
+	asl	r3
+	rol	r2
+	rol	r0
+110$:	asl	r3
+	rol	r2
+	rol	r0
+	asl	r3
+	rol	r2
+	rol	r0
+	cmpb	6(r5),#'o
+	beq	120$
+	asl	r3
+	rol	r2
+	rol	r0
+120$:	cmp	r1,#1.
+	beq	130$
+	tst	r0
+	bne	130$
+	tst	(sp)
+	beq	150$
+130$:	inc	(sp)
+	add	#'0,r0
+	cmp	r0,#'9
+	blos	140$
+	add	#'A-'0-10.,r0
+	cmp	6(r5),#'X
+	beq	140$
+	add	#'a-'A,r0
+140$:	movb	r0,(r4)+
+150$:	dec	r1
+	bne	100$
+	clrb	(r4)
+	jmp	cret$
+;
+; do decimal here
+;
+dec:
+	tst	r2
+	bpl	100$
+	movb	#'-,(r4)+
+	neg	r2
+	neg	r3
+	sbc	r2
+100$:	mov	#pow10b,r1
+110$:	clr	r0
+120$:	cmp	r2,(r1)
+	blo	140$
+	bhi	130$
+	cmp	r3,2(r1)
+	blo	140$
+130$:	sub	2(r1),r3
+	sbc	r2
+	sub	(r1),r2
+	inc	r0
+	br	120$
+140$:	tst	r0
+	bne	150$
+	tst	(sp)
+	beq	160$
+150$:	inc	(sp)
+	add	#'0,r0
+	movb	r0,(r4)+
+160$:	add	#4,r1
+	cmp	r1,#pow10e
+	blo	110$
+	add	#'0,r3
+	movb	r3,(r4)+
+	clrb	(r4)
+	jmp	cret$
+
+.globl $$putc
+$$putc::
+100$:	tstb	@#160104
+	bpl	100$
+	mov	r0,@#160106
+	cmpb	#'j&37,r0
+	bne	120$
+110$:	tstb	@#160104
+	bpl	110$
+	mov	#'m&37,@#160106
+120$:	tstb	@#160100
+	bpl	140$
+	mov	@#160102,lastc
+	cmpb	#'s&37,lastc
+	bne	140$
+130$:	tstb	@#160100
+	bpl	130$
+	mov	@#160102,lastc
+	cmpb	#'q&37,lastc
+	bne	130$
+140$:	rts	pc
+
+.globl $$getc
+$$getc::
+100$:	tstb	@#160100
+	bpl	100$
+	mov	@#160102,r0
+	bic	#^C177,r0
+	rts	pc
+
+	.end

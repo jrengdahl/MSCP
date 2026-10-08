@@ -1,0 +1,137 @@
+;
+; file = DEFS.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+; this is an agglomeration of useful definitions found elsewhere in .H files
+;
+
+.asect
+
+.=0
+c$flags:		.blkb	2
+cs$abo			=	10
+cs$dup			=	4
+cs$act			=	2
+cs$ini			=	1
+c$state:		.blkb	2
+c$timeout:		.blkb	2
+c$type:			.blkb	2
+
+.=0
+j$link:			.blkb	2
+j$job_list:		.blkb	2
+j$stack:		.blkb	2
+j$priority:		.blkb	2
+
+.=0
+p$count:		.blkb	2
+p$buffer:		.blkb	2
+p$program:		.blkb	2
+p$work:			.blkb	4
+ps$rcv			=	10
+ps$snd			=	4
+ps$abo			=	2
+ps$beg			=	1
+p$state:		.blkb	2
+p$timeout:		.blkb	2
+p$pkts:			.blkb	2
+
+.=0
+t$link:			.blkb	2
+t$ucb:			.blkb	2
+t$pkt:			.blkb	2
+t$block:		.blkb	4
+t$count:		.blkb	4
+t$qbus:			.blkb	4
+t$routine:		.blkb	2
+tt$new			=	100000
+tt$up			=	40000
+tt$abo			=	400
+tt$cmw			=	200
+tt$cmr			=	100
+tt$rct			=	40
+tt$rfq			=	20
+tt$wtq			=	10
+tt$cmp			=	4
+tt$wr			=	2
+tt$rd			=	1
+t$type:			.blkb	2
+tm$exp			=	100000
+tm$err			=	10000
+tm$sec			=	1000
+tm$ser			=	400
+t$modifiers:		.blkb	2
+t$cylinder:		.blkb	2
+t$surface:		.blkb	2
+t$sector:		.blkb	2
+t$number:		.blkb	2
+t$result:		.blkb	2
+t$segment:		.blkb	2
+t$buffer:		.blkb	2
+t$oldrbn:		.blkb	4
+t$newrbn:		.blkb	4
+t$warning:		.blkb	2
+t$fatal:		.blkb	2
+t$stat:			.blkb	1
+t$chip:			.blkb	1
+t$disk:			.blkb	1
+t$csec:			.blkb	1
+t$csur:			.blkb	1
+t$ccyl:			.blkb	1
+
+.=0
+u$ucb_job:		.blkb	2
+u$pkts:			.blkb	2
+u$tcbs:			.blkb	2
+u$hostsize:		.blkb	4
+u$flags:		.blkb	2
+u$media:		.blkb	4
+u$volume:		.blkb	4
+u$rctsize:		.blkb	2
+u$rctcopies:		.blkb	2
+us$fct			=	100000
+us$up			=	40000
+us$tsf			=	2000
+us$33			=	1000
+us$50			=	400
+us$hs3			=	200
+us$mfe			=	100
+us$unk			=	40
+us$imf			=	20
+us$rx			=	10
+us$rd			=	4
+us$ofl			=	2
+us$onl			=	1
+u$state:		.blkb	2
+u$block:		.blkb	4
+u$rs_bit:		.blkb	2
+u$wp_bit:		.blkb	2
+u$pd_bit:		.blkb	2
+u$lbnbase:		.blkb	4
+u$lbnsize:		.blkb	4
+u$rbnbase:		.blkb	4
+u$rbnsize:		.blkb	4
+u$pccyl:		.blkb	2
+u$rccyl:		.blkb	2
+u$mode:			.blkb	2
+u$op_sd:		.blkb	2
+u$pllctl:		.blkb	2
+u$gap0:			.blkb	2
+u$gap1:			.blkb	2
+u$gap2:			.blkb	2
+u$gap3:			.blkb	2
+u$sync:			.blkb	2
+u$sec:			.blkb	2
+u$sur:			.blkb	2
+u$cyl:			.blkb	2
+u$sec_interleave:	.blkb	2
+u$sur_skew:		.blkb	2
+u$cyl_skew:		.blkb	2
+u$cur_cyl:		.blkb	2
+u$ucb:			.blkb	2
+u$spt:			.blkb	2
+u$tpg:			.blkb	2
+u$gpc:			.blkb	2
+u$tcb:			.blkb	2
+u$type:			.blkb	2

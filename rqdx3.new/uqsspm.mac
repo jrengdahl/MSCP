@@ -1,0 +1,475 @@
+	.title	uqsspm
+	.ident	/01/
+;
+; file = UQSSPM.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+; this module contains the UQSSP routines
+;
+
+ps7	=	340
+ps4	=	200
+
+pe$pre	=	1.
+pe$pwe	=	2.
+pe$qre	=	6.
+pe$qwe	=	7.
+pe$ici	=	14.
+pe$pie	=	20.
+pe$mre	=	22.
+
+er$mpe	=	4000
+er$nem	=	10000
+
+op$res	=	0
+op$dd	=	1
+op$srp	=	100
+
+	.psect	c$data
+
+.globl .csr
+.csr::
+	.blkb	2
+.globl .descrip
+.descrip::
+	.blkb	4
+.globl .source
+.source::
+	.blkb	4
+.globl .packet
+.packet::
+	.blkb	2
+.globl .pte
+.pte::
+	.blkb	4
+
+	.psect	c$code
+
+;
+; (secondary) IP read interrupt service routine
+;
+; if the controller state is "online", then wake up the POLL job, else just
+; ignore the interrupt
+;
+.globl iprisr
+iprisr::
+	bit	#cs$act,.ccb+c$state	; is the controller online?
+	beq	100$			; nope, just quit
+	mov	#ipr_job,-(sp)		; unblock the waiting party
+	jsr	pc,$unblock		;
+	tst	(sp)+			;
+100$:	rts	pc			;
+
+;
+; this routine is run as a separate job with a separate context
+;
+; Each time this job is awakened, it will peek into the host communications
+; area to see if a new packet is ready (i.e., the owner bit is set).  If so,
+; it will copy the packet to a PKT and, depending on the value in the
+; connection identifier field, it will send the packet to either MSCP or DUP
+; (or perhaps nobody!).  It loops doing this until it finds no more packets,
+; and then goes to sleep.
+;
+.globl poll
+poll::
+	tst	-(sp)			; create a temporary storage slot
+100$:	jsr	pc,get_packet		; attempt to get a packet
+	mov	r0,(sp)			; well, did we get one?
+	beq	120$			; nope
+	bitb	#360,4(r0)		; packet type sequential?
+	bne	140$			; nope
+	tstb	5(r0)			; see if it's for MSCP
+	bne	110$			; nope
+	jsr	pc,do_mscp		; send it along
+	br	100$			; and loop
+110$:	cmpb	#2,5(r0)		; see if it's for DUP
+	bne	130$			; nope
+	jsr	pc,do_dup		; send it along
+	br	100$			; and loop
+120$:	mov	#ipr_job,(sp)		; block to wait for work
+	jsr	pc,$block		;
+	br	100$			; and try yet again
+
+130$:	mov	#pe$ici,-(sp)		; illegal connection identifier
+	jsr	pc,fatal_error		;
+
+140$:	mov	#pe$pie,-(sp)		; protocol incompatibility error
+	jsr	pc,fatal_error		;
+
+;
+; this routine will get a packet from the host if one is available (one is
+; available if a valid descriptor is returned)
+;
+.globl get_packet
+get_packet::
+	mov	r2,-(sp)		; save r2
+	mov	#cmd_ring,r2		; use the command packet ring
+	tst	-(sp)			; create a temporary storage slot
+	mov	#dma,(sp)		; acquire the dma engine
+	jsr	pc,$acquire		;
+	jsr	pc,get_descriptor	; get a descriptor
+	bmi	100$			; got a good one
+	clr	.packet			; say no packet available
+	br	110$			;
+100$:	mov	#pkts,(sp)		; get a packet to copy into
+	jsr	pc,$deqf_head		;
+	mov	r0,.packet		; save its address
+	inc	ha_flag			; remember we have taken the packet
+	clr	ha_time			; disable host access timeouts
+	mov	#20,@#rw$csr		; transfer from host to us
+	add	#2,r0			; put the result here
+	mov	r0,@#rw$ptr		;
+	mov	.descrip+0,r0		; here is the source address
+	mov	.descrip+2,r1		;
+	sub	#4,r1			;
+	sbc	r0			;
+	mov	r1,@#w$q22l		;
+	mov	r0,@#w$q22h		;
+	mov	#40,@#w$wcnt		; read one packet
+	inc	@#rw$csr		; and go!
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors?
+	bne	120$			; yep
+	jsr	pc,put_descriptor	; return the packet to the host
+110$:	mov	.packet,r2		; save the packet address
+	mov	#dma,(sp)		; release the dma engine
+	jsr	pc,$release		;
+	tst	(sp)+			; clean up stack
+	mov	r2,r0			; here is the return value
+	mov	(sp)+,r2		; restore r2
+	rts	pc			;
+
+120$:	mov	#pe$pre,-(sp)		; packet read error
+	jsr	pc,fatal_error		;
+
+;
+; this routine will put a packet to the host if a slot is available (one is
+; available if a valid descriptor is returned)
+;
+.globl put_packet
+put_packet::
+	mov	r2,-(sp)		; save r2
+	mov	#rsp_ring,r2		; use the response packet ring
+	tst	-(sp)			; create a temporary storage slot
+100$:	mov	#dma,(sp)		; acquire the dma engine
+	jsr	pc,$acquire		;
+	jsr	pc,get_descriptor	; get a descriptor
+	bmi	110$			; got a good one
+	mov	#dma,(sp)		; release the dma engine
+	jsr	pc,$release		;
+	mov	#5.,(sp)		; sleep for a bit
+	jsr	pc,$sleep		;
+	br	100$			; and try again
+110$:	mov	6(sp),r0		; get packet address
+	mov	2(r0),r1		; fetch size of packet to send
+	add	#4,r1			; account for header
+	asr	r1			; make it a word count
+	mov	r1,(sp)			; save away for a bit
+	bitb	#360,4(r0)		; is this a sequential message?
+	bne	140$			; nope
+	tstb	16(r0)			; is this a response packet?
+	bpl	140$			; nope
+	mov	credits,r1		; send number of credits, if needed
+	beq	130$			; not needed
+	cmp	#16,r1			; too many for one message?
+	bge	120$			; nope
+	mov	#16,r1			; just do this many for now
+120$:	sub	r1,credits		;
+130$:	inc	r1			; credits is actually one more
+	bisb	r1,4(r0)		; set it into the packet type field
+140$:	mov	#22,@#rw$csr		; transfer from us to host
+	add	#2,r0			;
+	mov	r0,@#rw$ptr		;
+	mov	.descrip+0,r0		; here is the destination address
+	mov	.descrip+2,r1		;
+	sub	#4,r1			;
+	sbc	r0			;
+	mov	r1,@#w$q22l		;
+	mov	r0,@#w$q22h		;
+	mov	(sp),@#w$wcnt		; write one packet
+	inc	@#rw$csr		; and go!
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors?
+	bne	160$			; yep
+	jsr	pc,put_descriptor	; return the packet to the host
+	mov	#dma,(sp)		; release the dma engine
+	jsr	pc,$release		;
+	mov	6(sp),(sp)		; put the packet back onto the queue
+	mov	#pkts,-(sp)		;
+	jsr	pc,$enq_head		;
+	cmp	(sp)+,(sp)+		; clean up stack
+	dec	ha_flag			; say we returned a packet
+	bne	150$			; we still have some work to do
+	mov	.ccb+c$timeout,ha_time	; enable host access timeouts
+150$:	mov	(sp)+,r2		; restore r2
+	rts	pc			;
+
+160$:	mov	#pe$pwe,-(sp)		; packet write error
+	jsr	pc,fatal_error		;
+
+;
+; get a descriptor (two words) from the host; the second word is copied only
+; if the first word indicates that this is a valid descriptor
+;
+.globl get_descriptor
+get_descriptor::
+	mov	0(r2),r0		; get address to poll
+	mov	14(r2),r1		;
+	add	#2,r1			;
+	add	2(r2),r1		;
+	adc	r0			;
+	mov	#20,@#rw$csr		; transfer from host to us
+	mov	#.descrip+0,@#rw$ptr	; put the result here
+	mov	r1,@#w$q22l		; here is the source address
+	mov	r0,@#w$q22h		;
+	mov	#1,@#w$wcnt		; read one word
+	inc	@#rw$csr		; and go!
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors?
+	bne	110$			; yep
+	tst	.descrip+0		; did we get anything good?
+	bpl	100$			; nope
+	mov	r0,.source+0		; save address for later
+	mov	r1,.source+2		;
+	sub	#2,r1			; get the other half
+	sbc	r0			;
+	mov	#.descrip+2,@#rw$ptr	;
+	mov	r1,@#w$q22l		;
+	mov	r0,@#w$q22h		;
+	mov	#1,@#w$wcnt		;
+	inc	@#rw$csr		;
+	bit	#1,@#rw$csr		;
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors?
+	bne	110$			; yep
+	sen				; say we succeeded
+100$:	rts	pc			; return
+
+110$:	mov	#pe$qre,-(sp)		; queue read error
+	jsr	pc,fatal_error		;
+
+;
+; put a descriptor (two words) to the host, clearing the owner bit and
+; interrupting the host if the ring has transitioned from either "empty" to
+; "non-empty" or from "full" to "non-full" (both conditions are detected
+; by noticing whether the owner bit is set for the previous descriptor)
+;
+.globl put_descriptor
+put_descriptor::
+	mov	#22,@#rw$csr		; transfer from us to host
+	mov	.descrip+0,-(sp)	; prepare to modify the descriptor
+	bis	#40000,(sp)		; set flag bit
+	bic	#100000,(sp)		; clear ownership bit
+	mov	sp,@#rw$ptr		; the source comes from the stack
+	mov	.source+2,@#w$q22l	; this is the destination
+	mov	.source+0,@#w$q22h	;
+	mov	#1,@#w$wcnt		; write one word
+	inc	@#rw$csr		; and go!
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors?
+	bne	120$			; yep
+	bit	#40000,.descrip+0	; was the flag bit set?
+	beq	110$			; nope, don't interrupt now
+	cmp	#1,10(r2)		; is it a ring of size one?
+	beq	100$			; yep, always interrupt
+	mov	0(r2),r0		; get address to poll
+	mov	14(r2),r1		;
+	sub	#4,r1			;
+	bic	12(r2),r1		;
+	add	#2,r1			;
+	add	2(r2),r1		;
+	adc	r0			;
+	mov	#20,@#rw$csr		; transfer from host to us
+	mov	sp,@#rw$ptr		; put the result here
+	mov	r1,@#w$q22l		; here is the source address
+	mov	r0,@#w$q22h		;
+	mov	#1,@#w$wcnt		; read one word
+	inc	@#rw$csr		; and go!
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors?
+	bne	120$			; yep
+	tst	(sp)			; do we own the previous entry?
+	bpl	110$			; nope
+100$:	mov	#22,@#rw$csr		; transfer from us to host
+	mov	#1,(sp)			; send a flag of one
+	mov	sp,@#rw$ptr		;
+	mov	6(r2),@#w$q22l		; here is the flag address
+	mov	4(r2),@#w$q22h		;
+	mov	#1,@#w$wcnt		; write one word
+	inc	@#rw$csr		; and go!
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	tst	vector			; should we interrupt as well?
+	beq	110$			; nope
+	clr	@#w$req			; do it!
+110$:	add	#4,14(r2)		; point to the next slot
+	bic	12(r2),14(r2)		;
+	tst	(sp)+			; clean up stack
+	rts	pc			; return
+
+120$:	mov	#pe$qwe,-(sp)		; queue write error
+	jsr	pc,fatal_error		;
+
+	.enabl	lsb
+
+;
+; get a buffer from the host
+;
+.globl get_buffer
+get_buffer::
+	mov	#20,.csr		; set csr value to use
+	br	100$			; use common routine
+
+;
+; put a buffer to the host
+;
+.globl put_buffer
+put_buffer::
+	mov	#22,.csr		; set csr value to use
+100$:					; common routine is here...
+
+	.dsabl	lsb
+
+	mov	.csr,@#rw$csr		; set up csr properly
+	mov	10(sp),r0		; get byte count
+	beq	120$			; if it's zero, nothing to do
+	mov	6(sp),@#rw$ptr		; set source/destination address
+	mov	4(sp),@#w$q22l		; here is the Q-bus address
+	mov	2(sp),@#w$q22h		;
+	bmi	map_buffer		; branch if it is mapped
+	asr	r0			; make byte count into a word count
+	mov	r0,@#w$wcnt		; put it in
+	inc	@#rw$csr		; set the go bit
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	clr	r0			; assume no errors
+	bit	#200,@#rw$csr		; memory parity error?
+	beq	110$			; nope
+	mov	#er$mpe,r0		; return it
+	br	120$			;
+110$:	bit	#100,@#rw$csr		; non-existent memory error?
+	beq	120$			; nope
+	mov	#er$nem,r0		; return it
+120$:	rts	pc			;
+
+;
+; this routine maps a virtual Q-bus address into a physical Q-bus address
+; (this is only needed when the host is a microVAX I) -- we need the address
+; of the current PKT to fetch the address of the map register table
+;
+; the UQSSP specification describes this in detail
+;
+.globl map_buffer
+map_buffer::
+	mov	r2,-(sp)		; save r2
+100$:	clr	r0			; compute mapping register address
+	bisb	5(sp),r0		;
+	clr	r1			;
+	bisb	4(sp),r1		;
+	swab	r1			;
+	bisb	7(sp),r1		;
+	asr	r1			;
+	asl	r1			;
+	asl	r1			;
+	rol	r0			;
+	mov	.packet,r2		;
+	add	32(r2),r1		;
+	adc	r0			;
+	add	34(r2),r0		;
+	mov	#20,@#rw$csr		; read a pte from the mapping table
+	mov	#.pte+0,@#rw$ptr	;
+	mov	r1,@#w$q22l		;
+	mov	r0,@#w$q22h		;
+	mov	#2,@#w$wcnt		;
+	inc	@#rw$csr		; set the go bit
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors at all?
+	bne	170$			; yep
+110$:	tst	.pte+2			; is the pte valid?
+	bmi	120$			; yep
+	mov	#2000,r0		; otherwise return an error
+	br	160$			;
+120$:	mov	.csr,@#rw$csr		; set up csr properly
+	mov	10(sp),@#rw$ptr		; set source/destination address
+	clr	r0			; compute mapped Q-bus address
+	bisb	.pte+1,r0		;
+	clr	r1			;
+	bisb	.pte+0,r1		;
+	swab	r1			;
+	asl	r1			;
+	rol	r0			;
+	mov	6(sp),r2		;
+	bic	#^c777,r2		;
+	bis	r2,r1			;
+	mov	r1,@#w$q22l		; here it is
+	mov	r0,@#w$q22h		;
+	mov	#1000,r0		; compute length of transfer
+	sub	r2,r0			;
+	cmp	12(sp),r0		;
+	bgt	130$			;
+	mov	12(sp),r0		;
+130$:	mov	r0,r1			; save for a spell
+	asr	r0			; make byte count into a word count
+	mov	r0,@#w$wcnt		; put it in
+	inc	@#rw$csr		; set the go bit
+	bit	#1,@#rw$csr		; wait for completion
+	bne	.-6			;
+	bit	#200,@#rw$csr		; memory parity error?
+	beq	140$			; nope
+	mov	#er$mpe,r0		; return it
+	br	160$			;
+140$:	bit	#100,@#rw$csr		; non-existent memory error?
+	beq	150$			; nope
+	mov	#er$nem,r0		; return it
+	br	160$
+150$:	add	r1,6(sp)		; update Q-bus address
+	adc	4(sp)			;
+	add	r1,10(sp)		; update source/destination address
+	sub	r1,12(sp)		; update length
+	bgt	100$			; more to do, by golly
+	clr	r0			;
+160$:	mov	(sp)+,r2		; restore r2
+	rts	pc			; return
+
+170$:	mov	#pe$mre,-(sp)		; map read error
+	jsr	pc,fatal_error		;
+
+;
+; this is the "croak and die" routine
+;
+; This routine is called when a fatal controller error has occurred, at a low
+; enough level that the link to the host is effectively broken.  The only
+; thing left to do is to stuff an error code into the SA and loop forever.
+; Of course, we save the SA error code for the next initialization attempt.
+;
+.globl fatal_error
+fatal_error::
+	mtps	#ps7			; lock out interrupts
+	mov	2(sp),r0		;;; get the error code
+	mov	r0,port_error		;;; save it
+	clr	@#w$fpl			;;; zap the lights
+	mov	#op$res,@#w$cmd		;;; reset the SMC chip
+	mov	#op$srp+7,@#w$cmd	;;; turn the floppy motor off
+	mov	#2,@#w$dat		;;;
+	mov	#op$dd,@#w$cmd		;;; deselect all drives
+	mov	r0,@#w$sard		;;; stick the error into the SA
+	bis	#100000,r0		;;;
+	mov	r0,@#w$sard		;;; stick the error into the SA
+	tst	vector			;;; poke the host?
+	beq	100$			;;; nope
+	clr	@#w$req			;;; do it!
+100$:	mov	#m$ipw,i$ipw		;;; set up priority 5 interrupts
+	mov	#m$rti,i$ipr		;;;
+	mov	#m$rti,i$saw		;;;
+	mov	#m$rti,i$sec		;;;
+	mtps	#ps4			;;; allow IP writes
+	br	.			;;; wait forever
+
+	.end

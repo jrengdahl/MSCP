@@ -1,0 +1,317 @@
+	.title	rqdx3
+	.ident	/01/
+;
+; file = RQDX3.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+; this module contains the power-up entry point and most interrupt service
+; routines (including a null one)
+;
+
+rw$ptr	==	140000
+rw$pll	==	140002
+w$fpl	==	140004
+r$fps	==	140006
+r$dat	==	140010
+r$cmd	==	140012
+w$dat	==	140020
+w$cmd	==	140022
+rw$csr	==	160006
+r$sard	==	160010
+r$sawr	==	160012
+w$q22l	==	160200
+w$q22h	==	160202
+w$wcnt	==	160204
+w$sard	==	160210
+w$vec	==	160214
+w$req	==	160216
+
+ps7	=	340
+
+op$res	=	0
+op$dd	=	1
+op$srp	=	100
+
+pe$t11	=	475.
+
+	.psect	c$code
+	.psect	c$strn
+	.psect	c$mwcn
+	.psect	c$$rom
+	.psect	c$csum
+	.psect	c$data
+	.psect	c$$ram
+	.psect	c$buff
+	.psect	c$last
+
+	.asect
+
+. = 0
+	jmp	m$init
+. = 4
+	badint,ps7
+. = 10
+	badint,ps7
+. = 14
+	badint,ps7
+. = 20
+	badint,ps7
+. = 24
+	badint,ps7
+. = 30
+	badint,ps7
+. = 34
+	badint,ps7
+. = 60
+	udcint,ps7
+. = 64
+	dmaint,ps7
+. = 70
+	clkint,ps7
+. = 120
+	ipwint,ps7
+. = 124
+	iprint,ps7
+. = 130
+	sawint,ps7
+. = 134
+	secint,ps7
+
+;
+; this is the table of support routines which are callable by DUP programs
+;
+. = 140
+	progress
+	terminate
+	get_host
+	put_host
+
+	.psect	c$code
+
+;
+; interrupt entry points
+;
+.globl badint
+badint::
+	mov	#140000,sp
+	mov	#pe$t11,-(sp)
+	jsr	pc,fatal_error
+.globl udcint
+udcint::
+	jmp	@i$udc
+.globl dmaint
+dmaint::
+	jmp	@i$dma
+.globl clkint
+clkint::
+	jmp	@i$clk
+.globl ipwint
+ipwint::
+	jmp	@i$ipw
+.globl iprint
+iprint::
+	jmp	@i$ipr
+.globl sawint
+sawint::
+	jmp	@i$saw
+.globl secint
+secint::
+	jmp	@i$sec
+
+;
+; power-up entry point
+;
+.globl m$init
+m$init::
+	clr	port_error		;;; clear last port error code
+	mov	#30000.,stalling	;;; set period of time to stall
+	jmp	t$power			;;; call power-up test stuff
+;
+; restart entry point
+;
+.globl m$main
+m$main::
+	mtps	#ps7			;;; lock out interrupts
+	mov	#100024,r0		;;; clear out most of RAM
+	mov	#<140000-100024>/2,r1	;;;
+100$:	clr	(r0)+			;;;
+	sob	r1,100$			;;;
+	mov	#140000,sp		;;; initialize stack pointer
+	mov	#11,@#rw$pll		;;; initialize data recovery register
+	clr	@#w$fpl			;;; clear the leds
+	movb	#op$res,@#w$cmd		;;; reset the smc9224 chip
+	clr	udc$bug			;;; assume the bug is not present
+	bit	#20000,@#r$fps		;;; is the ECO wire there?
+	beq	120$			;;; definitely not
+	movb	#op$srp+11,@#w$cmd	;;; enable interrupts
+	movb	#40,@#w$dat		;;;
+	movb	#op$dd,@#w$cmd		;;; deselect all drives
+	mov	#1000,r0		;;; wait for a bit
+110$:	sob	r0,110$			;;;
+	bit	#20000,@#r$fps		;;; is the ECO wire there?
+	bne	120$			;;; nope
+	inc	udc$bug			;;; say it is
+120$:	mov	#m$udc,i$udc		;;; set up interrupt handlers
+	mov	#m$dma,i$dma		;;;
+	mov	#m$clk,i$clk		;;;
+	mov	#m$ipw,i$ipw		;;;
+	mov	#m$ipr,i$ipr		;;;
+	mov	#m$saw,i$saw		;;;
+	mov	#m$sec,i$sec		;;;
+	jmp	$start			;;; start the operating system
+
+;
+; null interrupt service routine
+;
+.globl m$rti
+m$rti::
+	rti				;;; just ignore the interrupt
+
+;
+; SMC9224 "command done" interrupt service routine
+;
+.globl m$udc
+m$udc::
+	tst	udc$bug			;;; is the ECO wire there?
+	beq	100$			;;; nope
+	bit	#20000,@#r$fps		;;; is the SMC9224 interrupt line set?
+	beq	100$			;;; yep
+	rti				;;; must be a bogus interrupt
+100$:	movb	@#r$cmd,-(sp)		;;; get interrupt status
+	bicb	#35,(sp)		;;; clear bits of no interest
+	cmpb	#240,(sp)+		;;; valid status?
+	bne	130$			;;; no, it's a bogus interrupt
+;
+; in order to get RX devices to work at speed, we give single sector commands
+; to the SMC9224; when we get the interrupt, we may need to give another
+; command to the SMC9224 very quickly (so we don't miss the header coming up)
+;
+	tst	rx_number		;;; are we in sleazy floppy mode?
+	ble	120$			;;; nope
+	bitb	#30,@#r$cmd		;;; any errors?
+	bne	110$			;;; yep, quit now
+	dec	rx_number		;;; say one more sector done
+	beq	120$			;;; that's all, folks
+	movb	#op$srp+3,@#w$cmd	;;; update desired sector
+	movb	@rx_sector,@#w$dat	;;;
+	movb	#op$srp+6,@#w$cmd	;;; number of sectors is one
+	movb	#1,@#w$dat		;;;
+	movb	#op$srp+12,@#w$cmd	;;; make SMC9224 happy
+	movb	rx_opcode,@#w$cmd	;;; start the read or write up again
+	inc	rx_sector		;;; do this one next time
+	rti				;;; done for now
+110$:	neg	rx_number		;;; signal a fatal error
+;
+; set the interrupt flag and awaken any jobs which are blocked waiting for
+; the interrupt to occur (we unblock any jobs waiting for a SMC9224 "sector
+; done" interrupt also, since if there was an error, that interrupt will never
+; come); even if there are no jobs blocked waiting for this interrupt, we
+; will call the secondary interrupt service routine (the one that runs at task
+; level) if there is a poll drive command in progress
+;
+120$:	inc	udc_flag		;;; set the flag
+	tst	udc_job			;;; anyone waiting?
+	bmi	140$			;;; yep
+	mov	#1,udc_job		;;; show a pending interrupt
+	tst	sec_job			;;;
+	bmi	140$			;;;
+	mov	#1,sec_job		;;;
+	tst	pd_flag			;;; poll drive command in progress?
+	bne	140$			;;; yep
+130$:	rti				;;; just quit
+
+140$:	jsr	r0,intdis		;;; call the interrupt dispatcher
+	.word	udcisr			;;; and point to this routine
+
+;
+; Q-bus DMA engine interupt service routine
+;
+.globl m$dma
+m$dma::
+	inc	dma_flag		;;; set the flag
+	rti				;;; just quit
+
+;
+; 1 millisecond timer interrupt service routine
+;
+.globl m$clk
+m$clk::
+	inc	clk_flag		;;; set the flag
+	bit	#360,fpl		;;; is anyone selected now?
+	bne	100$			;;; yep, check again later
+	clr	@#w$fpl			;;; clear the front panel
+	mov	@#r$fps,fps		;;; read the switches
+	mov	fpl,@#w$fpl		;;; and light the leds
+100$:	tst	stalling		;;; has enough time elapsed?
+	beq	110$			;;; yep
+	dec	stalling		;;; nope, keep counting
+110$:	jsr	r0,tick			;;; call the hibernate routine
+
+;
+; IP write interrupt service routine
+;
+; because of the bug in the gate array which will cause the micrprocessor to
+; see "phantom" interrupts, we must make damn sure that the IP write we are
+; responding to is real (i.e., the SA register should not contain the vector
+; which we wrote into it just after initialization).
+;
+.globl m$ipw
+m$ipw::
+	bit	#1,@#rw$csr		;;; real IP writes clear this
+	bne	100$			;;; no chance, it's bogus
+	tst	@#r$sard		;;; and also this
+	beq	110$			;;; looks real to me
+100$:	rti				;;; yep, bogus interrupt
+110$:	jmp	t$power			;;; restart the whole shebang
+
+;
+; IP read interrupt service routine
+;
+; if there is a job to unblock, call the secondary interrupt service routine
+; (which runs at task level)
+;
+.globl m$ipr
+m$ipr::
+	inc	ipr_flag		;;; set the flag
+	tst	ipr_job			;;; anyone waiting?
+	bmi	100$			;;; yep
+	mov	#1,ipr_job		;;; show a pending interrupt
+	rti				;;; and quit
+
+100$:	jsr	r0,intdis		;;; call the interrupt dispatcher
+	.word	iprisr			;;; and point to this routine
+
+;
+; SA write interrupt service routine
+;
+; clear the SA, unless the controller is online, in which case the IP write
+; interrupt service routine is expecting the vector to be there, so put it back
+;
+.globl m$saw
+m$saw::
+	inc	saw_flag		;;; set the flag
+	clr	@#w$sard		;;; make some folks happy
+	bit	#cs$act,.ccb+c$state	;;; is the controller online?
+	beq	100$			;;; nope
+	mov	vector,@#w$sard		;;; restore this value
+100$:	rti				;;; and return
+
+;
+; SMC9224 "sector done" interrupt service routine
+;
+; if there is a job to unblock, call the secondary interrupt service routine
+; (which runs at task level)
+;
+.globl m$sec
+m$sec::
+	inc	sec_flag		;;; set the flag
+	tst	sec_job			;;;
+	bmi	100$			;;;
+	mov	#1,sec_job		;;;
+	rti				;;; just quit
+
+100$:	jsr	r0,intdis		;;; call the interrupt dispatcher
+	.word	secisr			;;; and point to this routine
+
+	.end

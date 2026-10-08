@@ -1,0 +1,232 @@
+	.title	uqssp
+	.ident	/01/
+;
+; file = UQSSP.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+
+step1	=	5500
+step2	=	10000
+step3	=	20000
+step4	=	40463
+
+s1wr	=	40000
+s1ie	=	200
+s1ivm	=	177
+s2pi	=	1
+s3pp	=	100000
+s4lf	=	2
+s4go	=	1
+
+pe$qwe	=	7
+pe$ppf	=	25
+
+	.psect	c$code
+
+.globl init
+init::
+	mov	r2,-(sp)		; save registers
+	mov	r3,-(sp)		;
+	mov	r4,-(sp)		;
+	mov	#mem,-(sp)		; acquire memory buffer
+	jsr	pc,$acquire		;
+	bic	#cs$act,.ccb+c$state	; say we are not active
+	bis	#cs$ini,.ccb+c$state	; but rather, we are initializing
+100$:	tst	saw_flag		; wait for a prod from the host
+	bne	110$			; got one
+	mov	#step1,@#w$sard		; dump in the step 1 value again
+	br	100$			; and loop
+110$:	dec	saw_flag		; we are reading the SA now
+	mov 	@#r$sawr,r4		; get step 1 into R4
+	bpl	100$			; high bit must be set
+	bit	#s1wr,r4		; is wrap-around specified?
+	beq	130$			; nope
+120$:	mov	r4,@#w$sard		; echo what was written into the SA
+	tst	saw_flag		;
+	beq	.-6			;
+	mov	@#r$sawr,r4		;
+	br	120$			;
+130$:	mov	r4,r0			; get the interrupt vector to use
+	bic	#^c<s1ivm>,r0		;
+	asl	r0			;
+	asl	r0			;
+	mov	r0,vector		; save it
+	mov	r0,@#w$vec		;
+	mov	r4,r0			; get command ring size
+	swab	r0			;
+	asr	r0			;
+	asr	r0			;
+	asr	r0			;
+	mov	#1,r1			;
+	bic	#^c<7>,r0		;
+	beq	150$			;
+140$:	asl	r1			;
+	sob	r0,140$		;
+150$:	mov	r1,cmd_ring+10		;
+	dec	r1			; get command ring mask
+	asl	r1			;
+	asl	r1			;
+	com	r1			;
+	mov	r1,cmd_ring+12		;
+	mov	r4,r0			; get response ring size
+	swab	r0			;
+	mov	#1,r1			;
+	bic	#^c<7>,r0		;
+	beq	170$			;
+160$:	asl	r1			;
+	sob	r0,160$		;
+170$:	mov	r1,rsp_ring+10		;
+	dec	r1			; get response ring mask
+	asl	r1			;
+	asl	r1			;
+	com	r1			;
+	mov	r1,rsp_ring+12		;
+	mov	#udc,(sp)		; acquire the SMC9224
+	jsr	pc,$acquire		;
+	mov	#data+4000,(sp)		; call the port integrity self-test
+	mov	#data+2000,-(sp)	;
+	jsr	pc,t$port		;
+	tst	(sp)+			;
+	tst	r0			; any problems?
+	beq	180$			; nope
+	mov	r0,(sp)			; if so, fall over in a heap
+	jsr	pc,fatal_error		; (we never come back here)
+180$:	jsr	pc,init_udc		; set up the SMC9224 for operation
+	mov	#udc,(sp)		; and release it
+	jsr	pc,$release		;
+	mov	#step2,r0		; send over our step 2 prompt
+	mov	r4,r1			;
+	swab	r1			;
+	bisb	r1,r0			;
+	mov	r0,@#w$sard		;
+	jsr	pc,poke_host		; interrupt and wait for response
+	mov 	@#r$sawr,r3		; get step 2 into R3
+	mov	#step3,r0		; send over our step 3 prompt
+	bisb	r4,r0			;
+	mov	r0,@#w$sard		;
+	jsr	pc,poke_host		; interrupt and wait for response
+	mov 	@#r$sawr,r2		; get step 3 into R2
+	bit	#s3pp,r2		; purge/poll test requested?
+	beq	210$			; nope
+	clr	ipr_flag		; clear flag
+	clr	@#w$sard		; put 0 into the SA
+190$:	tst	saw_flag		; wait for a host write to the SA
+	beq	190$			;
+	dec	saw_flag		; take care of it
+	tst	@#r$sawr		; did the host write 0?
+	beq	200$			; yep, sure did
+	mov	#pe$ppf,(sp)		; nope, crap out on him
+	jsr	pc,fatal_error		;
+200$:	tst	ipr_flag		; wait for the IP read to happen
+	beq	200$			;
+210$:	mov	r3,r1			; get LSB of communications area
+	bic	#s2pi,r1		;
+	mov	r2,r0			; get MSB of communications area
+	bic	#s3pp,r0		;
+	mov	r0,rsp_ring+0		; save address of response ring
+	mov	r1,rsp_ring+2		;
+	mov	r0,cmd_ring+0		; compute address of command ring
+	mov	r1,cmd_ring+2		;
+	mov	rsp_ring+10,r2		;
+	asl	r2			;
+	asl	r2			;
+	add	r2,cmd_ring+2		;
+	adc	cmd_ring+0		;
+	sub	#2,r1			; get address of response ring flag
+	sbc	r0			;
+	mov	r0,rsp_ring+4		; save it
+	mov	r1,rsp_ring+6		;
+	sub	#2,r1			; get address of command ring flag
+	sbc	r0			;
+	mov	r0,cmd_ring+4		; save it
+	mov	r1,cmd_ring+6		;
+	mov	rsp_ring+10,r2		; compute number of longs to test
+	add	cmd_ring+10,r2		;
+	inc	r2			;
+	bit	#s2pi,r3		; purge interrupts required?
+	beq	220$			; nope
+	sub	#2,r1			; get address of purge flag
+	sbc	r0			;
+	mov	r0,purge_flag+0		; save it
+	mov	r1,purge_flag+2		;
+	inc	r2			; fix counts and addresses
+	sub	#2,r1			;
+	sbc	r0			;
+	br	230$			; join common code
+220$:	clr	purge_flag+0		; remember no valid purge flag
+	clr	purge_flag+2		;
+230$:	mov	r2,(sp)			; push count and address to test
+	mov	r1,-(sp)		;
+	mov	r0,-(sp)		;
+	jsr	pc,test_memory		; and do it!
+	cmp	(sp)+,(sp)+		; clean up
+	clr	cmd_ring+14		; set current indices to zero
+	clr	rsp_ring+14		;
+	mov	#step4,@#w$sard		; send over our step 4 prompt
+	jsr	pc,poke_host		; interrupt and wait for response
+240$:	mov 	@#r$sawr,r1		; get step 4 into R1
+	bit	#s4go,r1		; is the go bit set?
+	beq	240$			; nope, keep waiting...
+	bit	#s4lf,r1		; host want the last failure packet?
+	beq	250$			; nope
+	tst	port_error		; was there any to speak of?
+	beq	250$			; nope
+	mov	port_error,(sp)		; send the requisite packet
+	jsr	pc,do_plf		;
+	clr	port_error		; now you see it, now you don't
+250$:	bic	#cs$ini,.ccb+c$state	; say we are not initializing
+	bis	#cs$act,.ccb+c$state	; but rather, we are active
+	mov	#mem,(sp)		; release the memory buffer for good
+	jsr	pc,$release		;
+	mov	vector,r0		; kludge around the gate-array bug
+	bne	260$			;
+	inc	r0			;
+260$:	mov	r0,@#w$sard		;
+	tst	(sp)+			; fix up stack
+	mov	(sp)+,r4		; restore registers
+	mov	(sp)+,r3		;
+	mov	(sp)+,r2		;
+	rts	pc			; return to caller, all initialized
+
+.globl test_memory
+test_memory::
+	mov	#data,r0		; zap a chunk of memory
+	mov	6(sp),r1		; get count of longs to zap
+100$:	clr	(r0)+			; do one at a time
+	clr	(r0)+			;
+	sob	r1,100$			; but do them all
+	mov	#dma,-(sp)		; acquire the DMA engine
+	jsr	pc,$acquire		;
+	mov	#22,@#rw$csr		; transfer to the Q-bus
+	mov	#data,@#rw$ptr		; from the buffer of zeros
+	mov	6(sp),@#w$q22l		; insert the target address
+	mov	4(sp),@#w$q22h		;
+	mov	10(sp),r0		; figure out word count
+	asl	r0			;
+	mov	r0,@#w$wcnt		; it goes here
+	inc	@#rw$csr		; gentlemen, start your engines!
+	bit	#1,@#rw$csr		; wait for it to finish
+	bne	.-6			;
+	bit	#300,@#rw$csr		; any errors?
+	beq	110$			; nope
+	mov	#pe$qwe,(sp)		; fatal queue write error
+	jsr	pc,fatal_error		;
+110$:	mov	#dma,(sp)		; release the DMA engine
+	jsr	pc,$release		;
+	tst	(sp)+			; clean the stack off
+	rts	pc			;
+
+.globl poke_host
+poke_host::
+	bit	#s1ie,r4		; interrupt if needed
+	beq	100$			;
+	tst	vector			;
+	beq	100$			;
+	clr	@#w$req			;
+100$:	tst	saw_flag		; wait for the host response
+	beq	100$			;
+	dec	saw_flag		; we are reading the SA now
+	rts	pc			;
+
+	.end

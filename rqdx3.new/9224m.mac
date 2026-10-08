@@ -1,0 +1,865 @@
+	.title	9224m
+	.ident	/01/
+;
+; file = 9224M.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+; this module contains the low-level disk I/O routines
+;
+
+.iif ndf debug, debug=0
+
+er$ddm	=	2
+er$ecc	=	10
+er$hce	=	20
+er$fat	=	100
+er$sf	=	40000
+
+st$ofl	=	3
+st$mfe	=	5
+
+op$res	=	0
+op$dd	=	1
+op$rd	=	2
+op$si1	=	4
+op$so1	=	6
+op$pd	=	20
+op$srp	=	100
+op$sri	=	120
+op$rsl	=	135
+op$wsl	=	240
+
+.if ge debug-1
+
+	.psect	c$strn
+
+.100:	.asciz	<12>"error in read, tot_sec = %d, TCB.result = %d"
+.101:	.asciz	<12>"error in write, sec_flag = %d"
+
+.endc
+
+	.psect	c$data
+
+.globl .routine:
+.routine::
+	.blkb	2
+.globl .opcode
+.opcode::
+	.blkb	2
+.globl .i
+.i::
+	.blkb	2
+.globl .j
+.j::
+	.blkb	2
+.globl .src
+.src::
+	.blkb	2
+.globl .dst
+.dst::
+	.blkb	2
+.globl .qbus
+.qbus::
+	.blkb	4
+.globl .len
+.len::
+	.blkb	2
+.globl .hs3
+.hs3::
+	.blkb	2
+
+	.psect	c$code
+
+;
+; (secondary) SMC9224 "command done" interrupt service routine
+;
+; there are two functions to be performed here:  if a poll drive command is
+; has just finished, then we must wake up the job which is blocked waiting on
+; that unit; if not, then a regular command has finished, and we must wake
+; up any job waiting for either a "command done" or a "sector done" interrupt
+;
+.globl udcisr
+udcisr::
+	tst	-(sp)			; create a temporary storage slot
+	tst	pd_flag			; is a poll drive command active?
+	beq	140$			; nope
+	clr	pd_flag			; clear flag
+;
+; the chip status register should contain, in the low two bits, an encoding of
+; which drive is now "seek complete"; because of a bug in the SMC9224, what
+; it really contains is a number which is GREATER THAN OR EQUAL TO the desired
+; encoding (i.e., if drives 1 and 2 are being polled, and drvie 1 finishes
+; first, then the only possible encoding is 1, but if drive 2 finishes first,
+; the encoding could be any of 2, 3, or 0) -- note that the only spurious
+; numbers which can show up are those which were not being polled
+;
+	movb	#op$srp+10,@#w$cmd	; read the chip status register
+	movb	@#r$dat,r0		;
+	asl	r0			;
+	bic	#^c6,r0			; only look at these bits
+	mov	170$(r0),r1		; get bit mask
+100$:	bit	r1,pd_mask		; was drive seek in progress?
+	bne	110$			; yep
+	asr	r1			;
+	tst	-(r0)			;
+	bic	#^c6,r0			;
+	br	100$			; try the next one in sequence
+110$:	bic	r1,pd_mask		; say this guy is done
+	add	#pd_jobs,r0		; get pointer to waiting job
+	tst	(r0)			; should we wake this job?
+	bmi	120$			; yep
+	mov	#1,(r0)			; show a pending interrupt
+	br	130$			;
+120$:	mov	r0,(sp)			; wake it up!
+	jsr	pc,$unblock		;
+;
+; now that this drive is "seek complete", we must restart the poll drive
+; command on any remaining drives (or else a few jobs will be in limbo)
+;
+130$:	tst	pdmask			; anyone still waiting?
+	beq	160$			; nope
+	movb	#op$dd,@#w$cmd		; no drive is selected
+	bitb	#40,@#r$cmd		; wait for completion
+	beq	.-6			;
+	mov	#op$pd,r0		; make up a poll drive command
+	add	pd_mask,r0		;
+	mov	r0,pd_flag		;
+	movb	pd_flag,@#w$cmd		; give it the command
+	br	160$			;
+;
+; this wasn't a poll drive completion interrupt, so wake up the general public
+;
+140$:	mov	#udc_job,(sp)		; just wake up the regular guys
+	jsr	pc,$unblock		;
+	tst	sec_job			;
+	bmi	150$			;
+	mov	#1,sec_job		;
+	br	160$			;
+150$:	mov	#sec_job,(sp)		;
+	jsr	pc,$unblock		;
+160$:	tst	(sp)+			; clean up stack
+	rts	pc			;
+
+170$:	.word	21,42,104,210
+
+;
+; (secondary) SMC9224 "sector done" interrupt service routine
+;
+; we must wake up any job waiting for a "sector done" interrupt
+;
+.globl secisr
+secisr::
+	mov	#sec_job,-(sp)		; just wake up the regular guy
+	jsr	pc,$unblock		;
+	tst	(sp)+			;
+	rts	pc			;
+
+;
+; get the disk status register of the drive attached to a given UCB
+;
+; We must acquire the SMC9224, clear the "force ready" bit, and select the
+; drive.  Then we can return a valid disk status.  The bits of interest here
+; are "ready" and "write fault" (which indicates write protect for RXs).
+; Note that the RX33 is special, and requires extra code due to the "feature"
+; it has with respect to the "ready" line (it is renamed to "disk change").
+; We clean up by reselecting the previously selected drive and releasing the
+; SMC9224 chip.
+;
+.globl get_disk
+get_disk::
+	mov	#udc,-(sp)		; acquire the udc chip
+	jsr	pc,$acquire		;
+100$:	tst	pd_flag			; is a poll drive in progress?
+	beq	110$			; nope
+	mov	#1.,(sp)		; sleep for a tick
+	jsr	pc,$sleep		;
+	br	100$			; and try again
+110$:	mov	4(sp),r1		; get UCB address
+	mov	reg.7,r0		; get current user output bits
+	bic	#4,r0			; don't force ready
+	movb	#op$srp+7,@#w$cmd	;
+	movb	r0,@#w$dat		;
+	clr	udc_flag		; clear interrupt flag
+	movb	u$op_sd(r1),@#w$cmd	; select the new drive
+	tst	udc_flag		; wait for completion
+	beq	.-4			;
+	movb	#op$srp+11,@#w$cmd	; read the disk status register
+	movb	@#r$dat,r0		; and return it
+	bit	#us$33,u$state(r1)	; is it an RX33?
+	beq	130$			; nope
+	bit	#2,r0			; is disk change asserted?
+	beq	120$			; nope
+	clr	udc_flag		; clear interrupt flag
+	movb	#op$so1+0,@#w$cmd	; step out 1 cylinder
+	tst	udc_flag		; wait for completion
+	beq	.-4			;
+	movb	#op$srp+11,@#w$cmd	; read the disk status register
+	movb	@#r$dat,r0		; and return it
+120$:	mov	#2,r1			; turn disk change into ready
+	xor	r1,r0			;
+130$:	mov	sd_flag,r1		; select old user
+	bne	140$			; got one
+	mov	#op$dd,r1		; deselect instead
+140$:	movb	#op$srp+7,@#w$cmd	; restore state of user output bits
+	movb	reg.7,@#w$dat		;
+	clr	udc_flag		; clear interrupt flag
+	movb	r1,@#w$cmd		; do the command
+	tst	udc_flag		; wait for completion
+	beq	.-4			;
+	mov	r0,(sp)			; save it for a while
+	mov	#udc,-(sp)		;
+	jsr	pc,$release		; release the udc chip
+	tst	(sp)+			; clean up stack
+	mov	(sp)+,r0		;
+	rts	pc			;
+
+;
+; give the SMC9224 a seek command, and then start up a poll drive command
+;
+.globl seek
+seek::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r4		; get TCB address
+	mov	t$ucb(r4),r3		; and UCB address
+	jsr	pc,.select		; select this drive
+	movb	#op$srp+4,@#w$cmd	; fill surface and cylinder registers
+	mov	t$cylinder(r4),r0	;
+	asr	r0			;
+	asr	r0			;
+	asr	r0			;
+	asr	r0			;
+	bic	#17,r0			;
+	add	t$surface(r4),r0	;
+	movb	r0,@#w$dat		;
+	movb	t$cylinder(r4),@#w$dat	;
+	bis	r0,.hs3			; keep track of the head select bits
+	clr	udc_job			; ignore previous interrupts
+	movb	#op$sri+4,@#w$cmd	; do the seek command
+	mov	u$op_sd(r3),r2		; figure out our unit number
+	bic	#^c3,r2			;
+	bisb	u$pd_bit+0(r3),pd_mask	; say we are waiting
+	add	r2,r2			;
+	add	#pd_jobs,r2		;
+	clr	(r2)			; ignore any previous completions
+	mov	#udc_job,(sp)		; wait for the udc to stop stepping
+	jsr	pc,$block		;
+	jsr	pc,.deselect		; deselect this drive
+	mov	r2,(sp)			; wait for the poll to finish
+	jsr	pc,$block		;
+	jmp	cret$			; and return
+
+;
+; restore the currently selected drive to track 0, using seek and step
+; commands (we can't use the drive restore command since some drives break)
+;
+.globl restore
+restore::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r3		; get UCB address
+	bit	#us$50,u$state(r3)	; is it an RX50?
+	beq	110$			; nope
+	mov	#30,r2			; output some step pulses
+100$:	mov	#op$si1+1,(sp)		;
+	jsr	pc,put_udc		;
+	sob	r2,100$			;
+110$:	bit	#us$rx,u$state(r3)	; is it an RX?
+	bne	120$			; nope
+	movb	#op$srp+10,@#w$cmd	; use non-buffered step pulses
+	movb	#306,@#w$dat		;
+120$:	mov	#op$rd+1,(sp)		; do a restore command
+	jsr	pc,put_udc		;
+	movb	#op$srp+11,@#w$cmd	; check for track 0
+	bitb	#20,@#r$dat		; bit must be set...
+	beq	120$			; nope, we have a problem here
+	movb	#op$srp+10,@#w$cmd	; restore old mode bits
+	movb	reg.8,@#w$dat		;
+	jmp	cret$			; return
+
+;
+; determine the size of the media inserted into the floppy, and set up UCB
+; parameters to match it (this really only applies to RX33 drives, but we do
+; it for RX50 drives also to catch unformatted media)
+;
+.globl size_media
+size_media::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r3		; get UCB address
+	bis	#1,reg.7		; turn the motor on
+	clr	sd_flag			; select the drive
+	jsr	pc,.select		;
+	clr	mo_time			;
+	clr	clk_flag		; clear timer flag
+100$:	movb	#op$srp+11,@#w$cmd	; look for an index pulse
+	bitb	#100,@#r$dat		;
+	bne	110$			; got one
+	cmp	#2000.,clk_flag		; has it been 2 seconds yet?
+	bhi	100$			; nope
+	mov	#st$ofl+40,r2		; say the unit is offline
+	br	120$			;
+110$:	mov	r3,(sp)			; get to track 0
+	jsr	pc,restore		;
+	jsr	pc,.deselect		; deselect the drive
+	mov	r3,(sp)			; assume RX50 (low speed) media
+	jsr	pc,rx50.media		;
+	bis	#10,reg.7		; set the motor to low speed
+	clr	sd_flag			; actually select the drive
+	jsr	pc,.select		;
+	clr	mo_time			;
+	jsr	pc,130$			; touch the media
+	beq	120$			; looks okay
+	bit	#us$33,u$state(r3)	; is it an RX33?
+	beq	120$			; nope
+	jsr	pc,.deselect		; deselect the drive
+	mov	r3,(sp)			; assume RX33 (high speed) media
+	jsr	pc,rx33.media		;
+	bic	#10,reg.7		; set the motor to high speed
+	clr	sd_flag			; actually select the drive
+	jsr	pc,.select		;
+	clr	mo_time			;
+	jsr	pc,130$			; touch the media
+120$:	jsr	pc,.deselect		; deselect the drive
+	mov	r2,r0			; return the status
+	jmp	cret$			;
+
+130$:	movb	#op$srp+3,@#w$cmd	; try to seek to (0,0,1)
+	movb	#1,@#w$dat		;
+	clrb	@#w$dat			;
+	clrb	@#w$dat			;
+	clr	udc_flag		; clear interrupt flag
+	clr	clk_flag		; and timer flag
+	movb	#op$sri+7,@#w$cmd	; do a seek command
+140$:	tst	udc_flag		; is the seek complete?
+	bne	150$			; yep
+	cmp	#2000.,clk_flag		; has it been 2 seconds yet?
+	bhi	140$			; nope
+	clrb	@#w$cmd			; abort the command in progress
+	br	160$			; and say it failed
+150$:	bitb	#30,@#r$cmd		; any error bits set?
+	bne	160$			; yep
+	clr	r2			; it worked, so return no error
+	br	170$			;
+160$:	mov	#st$mfe,r2		; say we have unformatted media
+170$:	rts	pc			; return
+
+	.enabl	lsb
+;
+; the read and write commands can share a fair amount of code
+;
+.globl read
+read::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r4		; get TCB address
+	mov	t$ucb(r4),r3		; get UCB address
+	jsr	pc,.select		; select the drive
+	mov	#.read,.routine		; use this routine
+	br	100$			; branch to common code
+
+.globl write
+write::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r4		; get TCB address
+	mov	t$ucb(r4),r3		; get UCB address
+	jsr	pc,.select		; select the drive
+	mov	#.write,.routine	; use this routine
+100$:					; this is the common code
+
+	.dsabl	lsb
+
+;
+; what we do is call the lower-level read or write routine, and if it fails in
+; a way that we can retry, then we restore to track 0 and retry the operation;
+; if that fails also, and the failure is an ECC error, we call the ECC
+; correction routine, and if THAT fails also, the error is fatal
+; 
+	clr	t$warning(r4)		; clear intermediate error
+	clr	t$fatal(r4)		; and final error
+	jsr	pc,@.routine		; try the operation
+	tst	r0			; any errors?
+	beq	130$			; nope
+	mov	r0,t$warning(r4)	; save the intermediate error
+	bit	#tm$ser,t$modifiers(r4)	; error recovery suppressed?
+	bne	120$			; yep
+	bit	#er$fat,r0		; was the error fatal?
+	bne	110$			; yep
+	mov	r3,(sp)			; stuff UCB address
+	jsr	pc,restore		; restore the drive to track 0
+	jsr	pc,@.routine		; try the operation again
+	tst	r0			; any errors?
+	beq	130$			; nope
+	mov	r0,t$warning(r4)	; save the intermediate error
+110$:	bit	#er$ecc,r0		; is it an ECC error?
+	beq	120$			; nope
+	bit	#tm$sec,t$modifiers(r4)	; error correction suppressed?
+	bne	120$			; yep
+	jsr	pc,.apply_ecc		; give it a whirl
+120$:	bis	r0,t$fatal(r4)		; save error code for a bit
+130$:	jsr	pc,.deselect		; deselect the drive
+	mov	t$fatal(r4),r0		; fetch the error code
+	jmp	cret$			; and return
+
+;
+; see the comments in the RX_READ routine for more details
+;
+.globl .read
+.read::
+	bit	#us$rx,u$state(r3)	; is it a floppy disk?
+	beq	100$			; nope
+	mov	r4,-(sp)		; call a different routine
+	jsr	pc,rx_read		;
+	tst	(sp)+			;
+	rts	pc			;
+100$:	mov	#dma,-(sp)		; acquire the dma engine
+	jsr	pc,$acquire		;
+	mov	t$pkt(r4),.packet	;
+	bit	#tm$ser,t$modifiers(r4)	; is error recovery suppressed?
+	beq	110$			; nope
+	mov	#1,.j			; just try things once
+	br	120$			;
+110$:	mov	#10,.j			; try things many times
+120$:	mov	#op$rsl,.opcode		; opcode is read
+130$:	mov	.j,.i			; initialize counter
+140$:	movb	#op$srp+0,@#w$cmd	; load the register set
+	movb	t$buffer+0(r4),@#w$dat	; dma7-0
+	movb	t$buffer+1(r4),@#w$dat	; dma15-8
+	clrb	@#w$dat			; dma23-16
+	movb	t$sector(r4),@#w$dat	; sector
+	mov	t$cylinder(r4),r0	;
+	asr	r0			;
+	asr	r0			;
+	asr	r0			;
+	asr	r0			;
+	bic	#17,r0			;
+	add	t$surface(r4),r0	;
+	movb	r0,@#w$dat		; surface
+	movb	t$cylinder(r4),@#w$dat	; cylinder
+	movb	t$number(r4),@#w$dat	; number
+	bis	r0,.hs3			; keep track of the head select bits
+	bit	#tt$wtq,t$type(r4)	; copy the destination to the Q-bus?
+	bne	150$			; yep
+	jmp	200$			; nope
+150$:	clr	total_sectors		; initialize progress indicator
+	clr	udc_flag		; clear interrupt flags
+	clr	sec_flag		;
+	movb	#op$srp+12,@#w$cmd	; make 9224 happy
+	movb	.opcode,@#w$cmd		; send the command to the udc
+	mov	t$buffer(r4),.src	; make local copies of these
+	mov	t$qbus+0(r4),.qbus+0	;
+	mov	t$qbus+2(r4),.qbus+2	;
+	mov	t$segment(r4),.len	;
+160$:	tst	sec_flag		; wait for either m$sec or m$udc
+	bgt	170$			;
+	tst	udc_flag		;
+	beq	160$			;
+	tst	sec_flag		;
+	beq	210$			;
+170$:	dec	sec_flag		;
+	inc	total_sectors		;
+	tst	.len			; any work to do?
+	ble	160$			; nope
+	cmp	#1000,.len		; a full sector?
+	blt	180$			; yep
+	mov	.len,-(sp)		; else just do this much
+	br	190$			;
+180$:	mov	#1000,-(sp)		; do a full sector
+190$:	mov	.src,-(sp)		; plant source address
+	mov	.qbus+2,-(sp)		; send Q-bus address also
+	mov	.qbus+0,-(sp)		;
+	jsr	pc,put_buffer		; copy to the Q-bus
+	add	#10,sp			; clean up
+	bis	r0,t$fatal(r4)		; save any error indication
+	add	#1000,.src		; adjust pointers
+	add	#1000,.qbus+2		;
+	adc	.qbus+0			;
+	sub	#1000,.len		;
+	br	160$			; go do some more
+200$:	clr	udc_flag		; clear interrupt flags
+	clr	sec_flag		;
+	movb	#op$srp+12,@#w$cmd	; make 9224 happy
+	movb	.opcode,@#w$cmd		; send the command to the udc
+	tst	udc_flag		; wait for completion
+	beq	.-4			;
+	mov	sec_flag,total_sectors	;
+210$:	bitb	#30,@#r$cmd		; any obvious errors?
+	bne	220$			; yep
+	clr	r2			; nope
+	br	260$			;
+220$:	mov	r4,(sp)			; get true error status
+	mov	#tt$rd,-(sp)		;
+	jsr	pc,get_udc		;
+	tst	(sp)+			;
+	mov	r0,r2			; save it
+	beq	260$			; no errors
+	cmp	.i,.j			; is it the first soft error?
+	beq	230$			; yep
+	mov	r2,t$warning(r4)	; save this intermediate error
+	bit	#er$fat,r2		; was the error fatal?
+	bne	240$			; yep
+	cmp	#er$sf+er$hce,r2	; indication of bad block?
+	bne	230$			; nope
+	bis	#er$fat,r2		; say not to continue any more
+	br	240$			;
+230$:	dec	.i			; any retries left?
+	blt	240$			; nope
+	jmp	140$			;
+240$:	movb	#op$srp+3,@#w$cmd	; compute number of good sectors
+	movb	@#r$dat,r0		;
+	sub	t$sector(r4),r0		;
+	mov	r0,t$result(r4)		;
+	bit	#er$sf,r2		; was it a seek error?
+	beq	250$			; nope
+	bit	#er$ddm,r2		; with a deleted data mark?
+	beq	270$			; nope
+	dec	t$result(r4)		; if so, true count is one less
+250$:	bit	#er$ddm,r2		; was a deleted data mark encountered?
+	beq	270$			; nope
+	dec	total_sectors		; account for it
+	br	270$			;
+260$:	mov	t$number(r4),t$result(r4) ; this is the true result
+270$:	cmp	total_sectors,t$result(r4) ; right number of sectors?
+	beq	280$			; yep
+
+.if ge debug-1
+
+	mov	t$result(r4),-(sp)	; print a nasty message
+	mov	total_sectors,-(sp)	;
+	mov	#.100,-(sp)		;
+	jsr	pc,printf		;
+	add	#6,sp			;
+
+.endc
+
+	jmp	130$			; try again
+280$:	jsr	pc,.update_tcb		; attempt to get another segment
+	jmp	120$			; got one
+
+;
+; see the comments in the RX_WRITE routine for more details
+;
+.globl .write
+.write::
+	bit	#us$rx,u$state(r3)	; is it a floppy disk?
+	beq	100$			; nope
+	mov	r4,-(sp)		; call a different routine
+	jsr	pc,rx_write		;
+	tst	(sp)+			;
+	rts	pc			;
+100$:	mov	#dma,-(sp)		; acquire the dma engine
+	jsr	pc,$acquire		;
+	mov	t$pkt(r4),.packet	;
+	bit	#tm$ser,t$modifiers(r4)	; is error recovery suppressed?
+	beq	110$			; nope
+	mov	#1,.j			; just try things once
+	br	120$			;
+110$:	mov	#10,.j			; try things many times
+120$:	mov	#op$wsl,.opcode		; opcode is write
+	bit	#tm$err,t$modifiers(r4)	; write deleted data mark?
+	beq	130$			; nope
+	bis	#20,.opcode		; set the desired bit
+130$:	cmp	t$cylinder(r4),u$pccyl(r3) ; past pccyl?
+	blt	140$			; nope
+	bis	#2,.opcode		; yep, set the desired value
+140$:	mov	.j,.i			; initialize counter
+150$:	movb	#op$srp+0,@#w$cmd	; load the register set
+	movb	t$buffer+0(r4),@#w$dat	; dma7-0
+	movb	t$buffer+1(r4),@#w$dat	; dma15-8
+	clrb	@#w$dat			; dma23-16
+	movb	t$sector(r4),@#w$dat	; sector
+	mov	t$cylinder(r4),r0	;
+	asr	r0			;
+	asr	r0			;
+	asr	r0			;
+	asr	r0			;
+	bic	#17,r0			;
+	add	t$surface(r4),r0	;
+	movb	r0,@#w$dat		; surface
+	movb	t$cylinder(r4),@#w$dat	; cylinder
+	movb	t$number(r4),@#w$dat	; number
+	bis	r0,.hs3			; keep track of the head select bits
+	bit	#tt$rfq,t$type(r4)	; copy the source from the Q-bus?
+	bne	160$			; yep
+	jmp	260$			; nope
+160$:	clr	udc_flag		; clear interrupt flag
+	mov	#-1,sec_flag		; initialize progress indicator
+	mov	t$buffer(r4),.dst	; make local copies of these
+	mov	t$qbus+0(r4),.qbus+0	;
+	mov	t$qbus+2(r4),.qbus+2	;
+	mov	t$segment(r4),.len	;
+	cmp	#1000,.len		; a full sector?
+	blt	170$			; yep
+	mov	.len,-(sp)		; else just do this much
+	br	180$			;
+170$:	mov	#1000,-(sp)		; do a full sector
+180$:	mov	.dst,-(sp)		; plant destination address
+	mov	.qbus+2,-(sp)		; send Q-bus address also
+	mov	.qbus+0,-(sp)		;
+	jsr	pc,get_buffer		; copy from the Q-bus
+	add	#10,sp			; clean up
+	bis	r0,t$fatal(r4)		; save any error indication
+	add	#1000,.dst		; adjust pointers
+	add	#1000,.qbus+2		;
+	adc	.qbus+0			;
+	sub	#1000,.len		;
+	bit	#777,t$segment(r4)	; is last sector incomplete?
+	beq	200$			; nope
+	mov	#1000,r0		; get how many bytes to clear
+	mov	t$segment(r4),r1	;
+	bic	#^c777,r1		;
+	sub	r1,r0			;
+	asr	r0			;
+	mov	t$buffer(r4),r1		; here is the buffer address
+	add	t$segment(r4),r1	;
+190$:	clr	(r1)+			; clear a word
+	sob	r0,190$			; count down and loop if more
+200$:	movb	#op$srp+12,@#w$cmd	; make 9224 happy
+	movb	.opcode,@#w$cmd		; send the command to the udc
+210$:	tst	.len			; more to copy?
+	ble	270$			; nope
+	cmp	#1000,.len		; a full sector?
+	blt	220$			; yep
+	mov	.len,-(sp)		; else just do this much
+	br	230$			;
+220$:	mov	#1000,-(sp)		; do a full sector
+230$:	mov	.dst,-(sp)		; plant destination address
+	mov	.qbus+2,-(sp)		; send Q-bus address also
+	mov	.qbus+0,-(sp)		;
+	jsr	pc,get_buffer		; copy from the Q-bus
+	add	#10,sp			; clean up
+	bis	r0,t$fatal(r4)		; save any error indication
+	add	#1000,.dst		; adjust pointers
+	add	#1000,.qbus+2		;
+	adc	.qbus+0			;
+	sub	#1000,.len		;
+	tst	sec_flag		; did the disk catch up to me?
+	blt	250$			; nope
+
+.if ge debug-1
+
+	mov	sec_flag,-(sp)		; print a nasty message
+	mov	#.101,-(sp)		;
+	jsr	pc,printf		;
+	cmp	(sp)+,(sp)+		;
+
+.endc
+
+240$:	tst	udc_flag		; wait for the udc to finish
+	beq	240$			;
+	jmp	140$			; and punt!
+250$:	dec	sec_flag		; count another sector
+	br	210$			; and loop
+260$:	clr	udc_flag		; clear interrupt flag
+	movb	#op$srp+12,@#w$cmd	; make 9224 happy
+	movb	.opcode,@#w$cmd		; send the command to the udc
+270$:	tst	udc_flag		; wait for completion
+	beq	.-4			;
+280$:	bitb	#30,@#r$cmd		; any obvious errors?
+	bne	290$			; yep
+	clr	r2			; nope
+	br	320$			;
+290$:	mov	r4,(sp)			; get true error status
+	mov	#tt$wr,-(sp)		;
+	jsr	pc,get_udc		;
+	tst	(sp)+			;
+	mov	r0,r2			; save it
+	beq	320$			; no errors
+	cmp	.i,.j			; is it the first soft error?
+	beq	300$			; yep
+	mov	r2,t$warning(r4)	; save this intermediate error
+	bit	#er$fat,r2		; was the error fatal?
+	bne	310$			; yep
+	cmp	#er$sf+er$hce,r2	; indication of bad block?
+	bne	300$			; nope
+	bis	#er$fat,r2		; say not to continue any more
+	br	310$			;
+300$:	dec	.i			; any retries left?
+	blt	310$			; nope
+	jmp	150$			;
+310$:	movb	#op$srp+3,@#w$cmd	; compute number of good sectors
+	movb	@#r$dat,r0		;
+	sub	t$sector(r4),r0		;
+	mov	r0,t$result(r4)		;
+	br	330$			;
+320$:	mov	t$number(r4),t$result(r4) ; this is the true result
+330$:	jsr	pc,.update_tcb		; attempt to get another segment
+	jmp	120$			; got one
+
+;
+; see the comments in the UPDATE_TCB routine for more details
+;
+.globl .update_tcb
+.update_tcb::
+	tst	r2			; was there any error?
+	bne	160$			; yep
+	bit	#tt$wtq!tt$rfq,t$type(r4) ; did we copy to/from the Q-bus?
+	beq	160$			; nope
+	sub	t$segment(r4),t$count+2(r4) ; fix remaining byte count
+	bne	100$			; it's non-zero
+	sbc	t$count+0(r4)		;
+	ble	150$			; none left
+	br	110$			;
+100$:	sbc	t$count+0(r4)		;
+	blt	150$			; none left
+110$:	cmp	#1,dma			; anyone waiting?
+	beq	1$			; nope
+	mov	#dma,-(sp)		; release the DMA engine
+	jsr	pc,$release		;
+	tst	(sp)+			;
+	inc	r2			; set a flag
+1$:	add	t$result(r4),t$block+2(r4) ; compute next block number
+	adc	t$block+0(r4)		;
+	add	t$result(r4),t$sector(r4) ; compute new sector
+	cmp	t$sector(r4),u$sec(r3)	; overflow?
+	blt	120$			; nope
+	clr	t$sector(r4)		; yep, get to new surface
+	inc	t$surface(r4)		;
+	cmp	t$surface(r4),u$sur(r3)	; overflow?
+	blt	120$			; nope
+	clr	t$surface(r4)		; yep, get to new cylinder
+	inc	t$cylinder(r4)		;
+120$:	add	t$segment(r4),t$qbus+2(r4) ; compute new Q-bus address
+	adc	t$qbus+0(r4)		;
+	mov	u$sec(r3),r0		; compute new number
+	sub	t$sector(r4),r0		;
+	cmp	#18.,r0			; is it too big?
+	bge	130$			; nope
+	mov	#18.,r0			; use the smaller number
+130$:	mov	r0,t$number(r4)		;
+	swab	r0			; and segment
+	clrb	r0			;
+	asl	r0			;
+	mov	r0,t$segment(r4)	;
+	tst	t$count+0(r4)		; count still larger than 16 bits?
+	bne	140$			; yep, segment size is fine
+	cmp	r0,t$count+2(r4)	; segment larger than count?
+	blos	140$			; nope
+	mov	t$count+2(r4),r0	; use count instead
+	mov	r0,t$segment(r4)	;
+	add	#777,r0			; rounded up, of course
+	clrb	r0			;
+	swab	r0			;
+	asr	r0			;
+	mov	r0,t$number(r4)		;
+140$:	mov	#data,t$buffer(r4)	; reset buffer pointer
+	tst	r2			; did we release the DMA engine?
+	beq	2$			; nope
+	mov	#dma,-(sp)		; acquire the DMA engine
+	jsr	pc,$acquire		;
+	tst	(sp)+			;
+2$:	rts	pc			; and return if more to do
+
+150$:	clr	t$count+0(r4)		; clear remaining byte count
+	clr	t$count+2(r4)		;
+	clr	t$result(r4)		; no result to report
+	clr	t$number(r4)		; and nothing left to do either
+160$:	mov	#dma,(sp)		; release the dma engine
+	jsr	pc,$release		;
+	cmp	(sp)+,(sp)+		; return to caller's caller
+	mov	r2,r0			; get error code
+	rts	pc			; do it
+
+;
+; this routine will select a drive given a UCB
+;
+; We acquire exclusive use of the SMC9224 chip, and then if a poll drive
+; command is in progress we abort it.  If the drive is an RX33, we turn on
+; the "force ready" bit.  We then set up new values for the phase-locked loop
+; CSR and some of the internal SMC9224 registers, and do the actual select
+; drive command.  Finally, we remember which drive is currently selected.
+; We don't release the SMC9224 chip until the drive is deselected.
+;
+.globl select
+select::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r3		; get UCB address
+	jsr	pc,.select		; call the real routine
+	jmp	cret$			; all done
+
+.globl .select
+.select::
+	mov	#udc,-(sp)		; acquire the udc chip
+	jsr	pc,$acquire		;
+	tst	(sp)+			;
+	tst	pd_flag			; is a poll drive in progress?
+	beq	100$			; nope
+	movb	#op$res,@#w$cmd		; not anymore it isn't!
+	clr	pd_flag			;
+	movb	#op$srp+7,@#w$cmd	; reset the chip internals
+	movb	reg.7,@#w$dat		;
+	movb	reg.8,@#w$dat		;
+	movb	reg.9,@#w$dat		;
+100$:	clr	sd_time			; disable select drive timeouts
+	cmp	sd_flag,u$op_sd(r3)	; is it already selected?
+	beq	130$			; yep (thank God!)
+	mov	u$op_sd(r3),sd_flag	; remember who is being selected
+	bic	#4,reg.7		;
+	bit	#us$33,u$state(r3)	;
+	beq	110$			;
+	bis	#4,reg.7		;
+110$:	bit	#us$hs3,u$state(r3)	;
+	beq	120$			;
+	bic	#10,reg.7		;
+	bis	#100000,.hs3		;
+120$:	mov	u$mode(r3),reg.8	;
+	mov	u$pllctl(r3),@#rw$pll	; make sure the data separator works
+	movb	#op$srp+4,@#w$cmd	; zero surface and cylinder registers
+	clrb	@#w$dat			;
+	clrb	@#w$dat			;
+	movb	#op$srp+7,@#w$cmd	; load the retry and mode registers
+	movb	reg.7,@#w$dat		;
+	movb	reg.8,@#w$dat		;
+	clr	udc_flag		; clear interrupt flag
+	movb	sd_flag,@#w$cmd		; finally select the drive
+	tst	udc_flag		; wait for completion
+	beq	.-4			;
+130$:	clr	@#w$fpl			; diddle with the light
+	bis	u$rs_bit(r3),fpl	;
+	mov	@#r$fps,fps		;
+	mov	fpl,@#w$fpl		;
+	rts	pc			; all done
+
+;
+; this routine will deselect a drive given a UCB
+;
+; We set a timer to deselect the drive in a few seconds.  If the drive is an
+; RX, then we also set a timer to turn the motor off in a few seconds.  If
+; a poll drive command was aborted when the drive was selected, we now restart
+; it.  Finally, we release the SMC9224 chip.
+;
+.globl deselect
+deselect::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r3		; get UCB address
+	jsr	pc,.deselect		; call the real routine
+	jmp	cret$			; all done
+
+.globl .deselect
+.deselect::
+	clr	@#w$fpl			; diddle with the light
+	bic	u$rs_bit(r3),fpl	;
+	mov	@#r$fps,fps		;
+	mov	fpl,@#w$fpl		;
+	mov	#2,sd_time		; enable select drive timeouts
+	bit	#us$rx,u$state(r3)	; is it a floppy?
+	beq	100$			; nope
+	mov	#4,mo_time		; enable motor on timeouts
+100$:	tst	pd_mask			; should a poll drive be started?
+	beq	110$			; nope
+	mov	#10,@#rw$pll		; make sure floppy not in charge
+	bic	#4,reg.7		;
+	movb	#op$srp+7,@#w$cmd	;
+	movb	reg.7,@#w$dat		;
+	clr	udc_flag		; clear interrupt flag
+	movb	#op$dd,@#w$cmd		; no drive is selected
+	tst	udc_flag		; wait for completion
+	beq	.-4			;
+	clr	sd_flag			;
+	mov	#op$pd,r0		; make up a poll drive command
+	add	pd_mask,r0		;
+	mov	r0,pd_flag		;
+	movb	pd_flag,@#w$cmd		; give it the command
+110$:	mov	#udc,-(sp)		; release the udc chip
+	jsr	pc,$release		;
+	tst	(sp)+			;
+	rts	pc			; all done
+
+	.end

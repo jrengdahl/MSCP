@@ -1,0 +1,178 @@
+	.title	eccm
+	.ident	/01/
+;
+; file = ECCM.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+; these are the CRC/ECC routines
+;
+
+.iif ndf debug, debug = 0
+
+.if ge debug-1
+
+	.psect	c$strn
+
+.100:	.asciz	<12>"single bit error found at bit %d"
+
+.endc
+
+	.psect	c$code
+
+;
+; We are called for two reasons:  for RX drives, there is a bug in the SMC9224
+; which will sometimes flag a sector as having an invalid CRC when in fact it
+; is valid, and this routine is called to fix this bug; for RD drives, if a
+; series of read retries has failed to recover valid data, and the failure
+; is due to an invalid ECC, then this routine is called to see if the data can
+; be corrected (single bit errors only).  In either case, if the data is found
+; to be valid already, or if it can be made valid, then the data is transferred
+; to the host, and the number of valid sectors is incremented.
+;
+.globl apply_ecc
+apply_ecc::
+	jsr	r5,csv$			; save registers
+	mov	4(r5),r4		; get TCB address
+	mov	t$ucb(r4),r3		; and UCB address
+	jsr	pc,.apply_ecc		; call the real routine
+	jmp	cret$			; all done
+
+.globl .apply_ecc
+.apply_ecc::
+	mov	r3,-(sp)		; save UCB address
+	mov	r4,-(sp)		; and TCB address as well
+	mov	r5,-(sp)		; and this for good measure
+	mov	t$result(r4),r5		; compute buffer address
+	swab	r5			;
+	asl	r5			;
+	add	t$buffer(r4),r5		;
+	bit	#us$rx,u$state(r3)	; is this unit a floppy?
+	beq	140$			; nope
+;
+; do CRC for floppy
+;
+	mov	#161225,r3		; preset CRC to A1, A1, A1, FB
+	mov	#257.,r1		; do data plus CRC
+100$:	mov	(r5)+,r4		; get a word
+	swab	r4			; reverse byte order
+	xor	r4,r3			; create a partial result
+	mov	#16.,r0			; now loop through the CRC bits
+110$:	asl	r3			; shift the CRC
+	bcc	120$			; branch if high bit was clear
+	mov	#10041,r4		; XOR in the polynomial
+	xor	r4,r3			;
+120$:	sob	r0,110$			; branch until current word is done
+	sob	r1,100$			; branch until all words are done
+	tst	r3			; was the CRC correct?
+	bne	130$			; nope, real error
+	mov	2(sp),r4		; get TCB address
+	clr	t$warning(r4)		; clear warning messages
+	jmp	230$			; fix CRC error caused by bogus A1
+130$:	jmp	270$			; if not, just exit
+;
+; do ECC for winchester
+;
+140$:	mov	#24417,r2		; preset ECC to A1, FB
+	mov	#23240,r3		;
+	mov	#258.,r1		; do data plus ECC
+150$:	mov	(r5)+,r4		; get a word
+	swab	r4			; reverse byte order
+	xor	r4,r2			; create a partial result
+	mov	#16.,r0			; now loop through the ECC bits
+160$:	asl	r3			; shift the ECC
+	rol	r2			;
+	bcc	170$			; branch if high bit was clear
+	mov	#4005,r4		; XOR in the polynomial
+	xor	r4,r3			;
+	mov	#240,r4			;
+	xor	r4,r2			;
+170$:	sob	r0,160$			; branch until current word is done
+	sob	r1,150$			; branch until all words are done
+	tst	r2			; was the ECC correct?
+	bne	180$			; nope
+	tst	r3			; check again
+	bne	180$			; nope, real error
+	mov	2(sp),r4		; get TCB address
+	clr	t$warning(r4)		; clear warning messages
+	jmp	230$			; fix ECC error caused by bogus A1
+180$:	mov	#42987.,r1		; possibly do this many bits
+190$:	asl	r3			; shift the ECC
+	rol	r2			;
+	bcc	200$			; branch if high bit was clear
+	mov	#4005,r4		; XOR in the polynomial
+	xor	r4,r3			;
+	mov	#240,r4			;
+	xor	r4,r2			;
+200$:	tst	r2			; look for residue of a single bit
+	bne	210$			; definitely not
+	cmp	#1,r3			; check again
+	beq	220$			; yes!  go fix the bit in error
+210$:	sob	r1,190$			; branch if not all bits done
+	br	270$			; correction failed, just exit
+220$:	mov	#4160.,r3		; = 4096+32+32
+	sub	r1,r3			; get real bit number
+
+.if ge debug-1
+
+	mov	r3,-(sp)		; print a message
+	mov	#.100,-(sp)		;
+	jsr	pc,printf		;
+	cmp	(sp)+,(sp)+		;
+
+.endc
+
+	mov	r3,r2			; is it within the data block?
+	blt	270$			; nope
+	cmp	#4096.,r2		; check again
+	ble	270$			; still no
+	asr	r2			; compute word in error
+	asr	r2			;
+	asr	r2			;
+	asr	r2			;
+	asl	r2			;
+	mov	2(sp),r4		; get TCB address
+	mov	t$result(r4),r5		; add in amount already done
+	swab	r5			;
+	asl	r5			;
+	add	t$buffer(r4),r5		; from the start of the buffer
+	add	r5,r2			; get address of corrupted word
+	bic	#^c17,r3		; get bit number
+	mov	#17,-(sp)		; set correct bit in mask
+	sub	r3,(sp)			;
+	mov	#1,-(sp)		;
+	jsr	pc,asl$i		;
+	cmp	(sp)+,(sp)+		;
+	swab	r0			; reverse byte order
+	xor	r0,(r2)			; fix bit in error
+230$:	inc	t$result(r4)		; account for the corrected sector
+	bit	#tt$wtq,t$type(r4)	; should it be sent to the host?
+	beq	260$			; nope
+	tst	.len			; is it needed?
+	ble	260$			; nope
+	mov	#dma,-(sp)		; acquire the dma engine
+	jsr	pc,$acquire		;
+	mov	t$pkt(r4),.packet	;
+	cmp	#1000,.len		; a full sector?
+	blt	240$			; yep
+	mov	.len,-(sp)		; else just do this much
+	br	250$			;
+240$:	mov	#1000,-(sp)		; do a full sector
+250$:	mov	.src,-(sp)		; plant source address
+	mov	.qbus+2,-(sp)		; send Q-bus address also
+	mov	.qbus+0,-(sp)		;
+	jsr	pc,put_buffer		; copy to the Q-bus
+	add	#10,sp			; clean up
+	bis	r0,t$fatal(r4)		; save any error indication
+	mov	#dma,(sp)		; release the dma engine
+	jsr	pc,$release		;
+	tst	(sp)+			;
+260$:	clr	r0			; exit with success
+	br	280$			;
+270$:	mov	#20010,r0		; say it was uncorrectable
+280$:	mov	(sp)+,r5		; restore registers
+	mov	(sp)+,r4		;
+	mov	(sp)+,r3		;
+	rts	pc			; and return
+
+	.end

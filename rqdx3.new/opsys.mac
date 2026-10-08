@@ -1,0 +1,281 @@
+	.title	opsys
+	.ident	/01/
+;
+; file = OPSYS.MAC
+; project = RQDX3
+; author = Stephen F. Shirron
+;
+; this is the set of low-level scheduling routines which comprise the OS
+;
+; Routines are provided for each of the following operations:
+;     ACQUIRE -- mark a data structure or other resources as "in use"
+;     RELEASE -- free a previously acquired resource, and wake any job waiting
+;     BLOCK -- block further execution of the current job (sleep indefinitely)
+;     UNBLOCK -- wake up a job which had previously blocked itself
+;     CREATE -- set up a context for a new job and start it running
+;     SLEEP -- hibernate for a fixed number of seconds
+;
+
+ps7	=	340
+
+.macro	sysbeg	name,args
+n=4
+.irp arg,<args>
+arg=n
+n=n+2
+.endr
+.globl name
+name::
+	mov	(sp),-(sp)
+	mfps	2(sp)
+	mtps	#ps7
+.endm
+
+.macro	sysend
+	mov	r0,-(sp)
+	mov	r1,-(sp)
+	jmp	sysret
+.endm
+
+;
+; data required
+;
+	.psect	c$data
+
+	.blkw	20			; kernel stack
+.globl kstack
+kstack::
+	.blkw	4			; null stack
+.globl nstack
+nstack::
+.globl intlev
+intlev::.blkw	1			; interrupt level
+.globl usersp
+usersp::.blkw	1			; user stack pointer
+.globl curjob
+curjob::.blkw	1			; current job pointer
+.globl runjob
+runjob::.blkw	1			; list of running jobs
+.globl hibjob
+hibjob::.blkw	1			; list of hibernating jobs
+
+;
+; main entry point
+;
+	.psect	c$code
+
+.globl $start
+$start::
+	mov	#nstack,sp		;;; initialize the null stack
+	clr	-(sp)			;;;
+	mov	#null,-(sp)		;;;
+	clr	-(sp)			;;;
+	clr	-(sp)			;;;
+	mov	#kstack,sp		;;; start on the kernel stack
+	mov	#-1,intlev		;;; no interrupts being processed
+	jmp	start			;;; go do it
+
+;
+; interrupt dispatcher and system return
+;
+	.enabl	lsb
+
+.globl intdis
+intdis::
+	mov	r1,-(sp)		;;; save r1 in addition to r0
+	inc	intlev			;;; say we are doing an interrupt
+	bgt	100$			;;; nested, eh?
+	mov	sp,usersp		;;; save user stack pointer
+	mov	#kstack,sp		;;; and switch to kernel stack
+100$:	jsr	pc,@(r0)+		;;; call the user's isr
+	dec	intlev			;;; we are leaving
+	bge	120$			;;; not time to unwind yet
+	mov	usersp,sp		;;; restore user stack pointer
+.globl sysret
+sysret::
+	cmp	curjob,runjob		;;; highest priority job running?
+	beq	120$			;;; yep
+	tst	intlev			;;; are we processing an interrupt?
+	bge	120$			;;; yes, no context switch is allowed
+	mov	curjob,r0		;;; get current job
+	beq	110$			;;; none exists
+	mov	r2,-(sp)		;;; save registers
+	mov	r3,-(sp)		;;;
+	mov	r4,-(sp)		;;;
+	mov	r5,-(sp)		;;;
+	mov	sp,j$stack(r0)		;;; and save its stack pointer
+110$:	mov	runjob,r0		;;; get new runnable job
+	beq	130$			;;; none exists
+	mov	r0,curjob		;;; remember current job
+	mov	j$stack(r0),sp		;;; restore its old context
+	mov	(sp)+,r5		;;;
+	mov	(sp)+,r4		;;;
+	mov	(sp)+,r3		;;;
+	mov	(sp)+,r2		;;;
+120$:	mov	(sp)+,r1		;;;
+	mov	(sp)+,r0		;;;
+	rti				;;; restore ps and pc
+
+130$:	clr	curjob			;;; no job to run!
+	mov	#nstack,sp		;;; so fire up the null job
+	mtps	#0			;;; at zero priority
+
+	.dsabl	lsb
+
+;
+; null job
+;
+.globl null
+null::
+	br	null			; wow, that's a lot
+
+;
+; clock service routine
+;
+.globl tick
+tick::
+	mov	hibjob,r0		;;; get job to look at
+	bne	100$			;;; found one
+	mov	(sp)+,r0		;;; else, do a quick exit
+	rti				;;;
+100$:	mov	r1,-(sp)		;;; save r1 in addition to r0
+	mov	#hibjob,r1		;;;
+110$:	dec	j$job_list(r0)		;;; count down
+	bge	120$			;;; not time yet
+	mov	(r0),(r1)		;;; unlink from this list
+	mov	#runjob,j$job_list(r0)	;;; job is immediately runnable
+	mov	r1,-(sp)		;;;
+	jsr	pc,link			;;; link it into new list
+	mov	(sp)+,r0		;;;
+120$:	mov	r0,r1			;;; check the next guy
+	mov	(r0),r0			;;;
+	bne	110$			;;;
+	br	sysret			;;; all done
+
+;
+; acquire a resource
+;
+	sysbeg	$acquire,<list>
+
+	mov	list(sp),r1		;;; get list to wait on
+	tst	(r1)			;;; is the resource available now?
+	bne	100$			;;; nope
+	mov	#1,(r1)			;;; indicate it is in use
+	rti				;;; do a quick exit
+100$:	mov	runjob,r0		;;; get current job's jcb
+	mov	(r0),runjob		;;; remove it from the runnable list
+	mov	r1,j$job_list(r0)	;;; set list of jobs to link into
+	cmp	#1,(r1)			;;; first in line?
+	bne	110$			;;; nope
+	mov	r0,(r1)			;;; do it simply
+	clr	(r0)			;;;
+	br	120$			;;;
+110$:	jsr	pc,link			;;; link it into its new list
+120$:
+	sysend				;;; all done
+
+;
+; release a resource
+;
+	sysbeg	$release,<list>
+
+	mov	list(sp),r1		;;; get list to wait on
+	cmp	#1,(r1)			;;; is anyone waiting for it?
+	bne	100$			;;; yep
+	clr	(r1)			;;; indicate it is now free
+	rti				;;; do a quick exit
+100$:	mov	(r1),r0			;;; get job to unblock
+	mov	(r0),(r1)		;;; unlink it from the wait list
+	bne	110$			;;; there are more waiting
+	mov	#1,(r1)			;;; use a flag instead
+110$:	mov	#runjob,j$job_list(r0)	;;; put it into the runnable list
+	jsr	pc,link			;;; link it in
+
+	sysend				;;; all done
+
+;
+; block the current job
+;
+	sysbeg	$block,<list>
+
+	mov	list(sp),r1		;;; get list to block onto
+	cmp	#1,(r1)			;;; is there an $unblock pending?
+	bne	100$			;;; nope
+	clr	(r1)			;;; yep, clear the flag
+	rti				;;; and do a quick exit
+100$:	mov	runjob,r0		;;; get current job's jcb
+	mov	(r0),runjob		;;; unlink it from the runnable list
+	mov	r1,j$job_list(r0)	;;; get list of jobs to link into
+	jsr	pc,link			;;; link it into its new list
+
+	sysend				;;; all done
+
+;
+; unblock a job
+;
+	sysbeg	$unblock,<list>
+
+	mov	list(sp),r1		;;; get list of jobs to unblock from
+	mov	(r1),r0			;;; any job to unblock?
+	beq	100$			;;; nope
+	cmp	#1,r0			;;; is there a pending $unblock?
+	bne	110$			;;; nope
+100$:	mov	#1,(r1)			;;; flag a pending $unblock
+	rti				;;; and do a quick exit
+110$:	mov	(r0),(r1)		;;; unlink this job
+	mov	#runjob,j$job_list(r0)	;;; put it into the runnable list
+	jsr	pc,link			;;; link it in
+
+	sysend				;;; all done
+
+;
+; create a job
+;
+	sysbeg	$create,<jcb,beginning,priority,stack,argument>
+
+	mov	jcb(sp),r0		;;; get address of job control block
+	mov	stack(sp),r1		;;; get initial stack pointer
+	mov	argument(sp),-(r1)	;;; load argument onto the stack
+	clr	-(r1)			;;; this is the subroutine's return pc
+	clr	-(r1)			;;; push ps
+	mov	beginning(sp),-(r1)	;;; and pc
+	sub	#14,r1			;;; r0 through r5 are unspecified
+	mov	r1,j$stack(r0)		;;; save user stack pointer
+	mov	priority(sp),j$priority(r0) ;;; set software priority
+	mov	#runjob,j$job_list(r0)	;;; job is immediately runnable
+	jsr	pc,link			;;; link it into the list
+
+	sysend				;;; all done
+
+;
+; hibernate the current job
+;
+	sysbeg	$sleep,<ticks>
+
+	mov	runjob,r0		;;; get current job's jcb
+	mov	(r0),runjob		;;; unlink it from the runnable list
+	mov	hibjob,(r0)		;;; and make it hibernate
+	mov	r0,hibjob		;;;
+	mov	ticks(sp),j$job_list(r0) ;;; set wake-up time
+
+	sysend				;;; all done
+
+;
+; link a job into a list
+;
+.globl link
+link::
+	mov	r2,-(sp)		;;; save for a second
+	mov	j$job_list(r0),r1	;;; get the list to put the job into
+100$:	mov	(r1),r2			;;; get next job's jcb
+	beq	110$			;;; that's all there is, folks
+	cmp	j$priority(r0),j$priority(r2) ;;; check priorities
+	bgt	110$			;;; this is a good spot
+	mov	r2,r1			;;; check the next job
+	br	100$			;;;
+110$:	mov	r2,(r0)			;;; fix up links
+	mov	r0,(r1)			;;;
+	mov	(sp)+,r2		;;; restore scratch register
+	rts	pc			;;;
+
+	.end

@@ -1,0 +1,18 @@
+	.title	tsmac
+	.ident	/01/
+
+.globl t$pwr
+t$pwr::
+	reset
+	mov	#1500,@#w$sard
+	mov	#5500,@#w$sard
+	clr	ipr_flag
+	clr	saw_flag
+	jmp	m$main
+
+.globl t$port
+t$port::
+	clr	r0
+	rts	pc
+
+	.end
