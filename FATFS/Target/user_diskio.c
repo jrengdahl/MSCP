@@ -37,6 +37,7 @@
 #include <ctype.h>        // For character handling functions
 #include "user_diskio.h"
 #include "QSPI.h"
+#include "NorFatFsShim.h"
 #include "FATFS_SD.h"
 
 /* Private typedef -----------------------------------------------------------*/
@@ -159,20 +160,7 @@ DRESULT QSPI_write (
 )
 {
   /* USER CODE BEGIN WRITE */
-
-    uint32_t address = sector * QSPI_LBA_SIZE;
-    for (UINT i = 0; i < count*2; i++)
-        {
-        if((address & (QSPI_BLOCK_SIZE-1)) == 0
-        && QSPI_EraseSector(&hospi1, address) != HAL_OK)
-            {
-            return RES_ERROR;
-            }
-        if (QSPI_WritePage(&hospi1, address, (uint8_t *)buff + i * QSPI_PAGE_SIZE, QSPI_PAGE_SIZE) != HAL_OK) return RES_ERROR;
-        address += QSPI_PAGE_SIZE;
-        }
-
-    return RES_OK;
+    return NorFatFs_WriteSectors(&hospi1, buff, sector, count);
 
     /* USER CODE END WRITE */
 }
@@ -261,4 +249,3 @@ WCHAR ff_wtoupper(WCHAR wc) {
     }
     return wc;  // Return unchanged for non-lowercase letters
 }
-
