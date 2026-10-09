@@ -274,6 +274,13 @@ void interp()
             QspiCommand(p);
             }
 
+        HELP(  "mnt <path>                      mount a FATFS volume")
+        else if(buf[0]=='m' && buf[1]=='n' && buf[2]=='t')
+            {
+            extern void MntCommand(char *p);
+            MntCommand(p);
+            }
+
         HELP(  "mkfs <blocks> <path>            FATFS format a FATFS drive")
         else if(buf[0]=='m' && buf[1]=='k' && buf[2]=='f' && buf[3]=='s')
             {
@@ -281,11 +288,11 @@ void interp()
             MkfsCommand(p);
             }
 
-        HELP(  "mnt <path>                      mount a FATFS volume")
-        else if(buf[0]=='m' && buf[1]=='n' && buf[2]=='t')
+        HELP(  "ls <path>                       list the contents of a directory")
+        else if(buf[0]=='l' && buf[1]=='s')
             {
-            extern void MntCommand(char *p);
-            MntCommand(p);
+            extern void LsCommand(char *p);
+            LsCommand(p);
             }
 
         HELP(  "cat <path>                      copy a file to the console")
@@ -302,18 +309,39 @@ void interp()
             FdumpCommand(p);
             }
 
-        HELP(  "ls <path>                       list the contents of a directory")
-        else if(buf[0]=='l' && buf[1]=='s')
-            {
-            extern void LsCommand(char *p);
-            LsCommand(p);
-            }
-
         HELP(  "cp <source path> <dest path>    copy a file")
         else if(buf[0]=='c' && buf[1]=='p')
             {
             extern void CpCommand(char *p);
             CpCommand(p);
+            }
+
+        HELP(  "mv <source> <destination>       rename a file in the same directory")
+        else if(buf[0]=='m' && buf[1]=='v')
+            {
+            extern void MvCommand(char *p);
+            MvCommand(p);
+            }
+
+        HELP(  "rm <path>                       delete a file")
+        else if(buf[0]=='r' && buf[1]=='m' && (buf[2]==' ' || buf[2]==0))
+            {
+            extern void RmCommand(char *p);
+            RmCommand(p);
+            }
+
+        HELP(  "mkdir <path>                    create a directory")
+        else if(buf[0]=='m' && buf[1]=='k' && buf[2]=='d' && buf[3]=='i' && buf[4]=='r')
+            {
+            extern void MkdirCommand(char *p);
+            MkdirCommand(p);
+            }
+
+        HELP(  "rmdir <path>                    remove an empty directory")
+        else if(buf[0]=='r' && buf[1]=='m' && buf[2]=='d' && buf[3]=='i' && buf[4]=='r')
+            {
+            extern void RmdirCommand(char *p);
+            RmdirCommand(p);
             }
 
         HELP(  "diff <path1> <path2>            compare two files")
@@ -566,5 +594,3 @@ void interp()
         }
 
     }
-
-
